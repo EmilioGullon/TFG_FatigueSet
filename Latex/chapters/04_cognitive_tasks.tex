@@ -1,0 +1,126 @@
+\chapter{Tareas Cognitivas y Metricas Conductuales}
+\label{cap:cognitive_tasks}
+
+\section{Introduccion}
+
+Ademas de las mediciones fisiologicas continuas de los 4 wearables, el protocolo
+FatigueSet incluye \textbf{tareas cognitivas estandarizadas} que miden desempenio
+cognitivo y fatiga mental subjetiva. Estas tareas generan 5 archivos CSV por sesion.
+
+\section{Choice Reaction Time (CRT) - Tarea de Tiempo de Reaccion}
+
+\subsection{Objetivo y Protocolo}
+
+Mide velocidad y precision de respuesta motora ante estimulos visuales. Los participantes
+ven un circulo en la pantalla y deben presionar un boton lo mas rapido posible.
+
+\begin{itemize}
+    \item \textbf{Duracion}: ~2 minutos por bloque
+    \item \textbf{Estimulos}: Circulos aleatorios en pantalla
+    \item \textbf{Repuesta esperada}: Presion de tecla especifica
+    \item \textbf{Metricas}: Tiempo de reaccion, errores
+\end{itemize}
+
+\subsection{Archivo: exp\_crt.csv}
+
+Contiene: timestamp de estimulo, tiempo de reaccion (ms), respuesta correcta (0/1)
+
+Filas: ~60-100 registros por bloque
+
+\section{N-Back Task - Prueba de Memoria de Trabajo}
+
+\subsection{Objetivo y Protocolo}
+
+Tarea cognitiva exigente que requiere comparar el estimulo actual con el ''n'' posiciones
+anteriores. "1-Back": comparar con el anterior. "2-Back": comparar con hace 2.
+
+\begin{itemize}
+    \item \textbf{Duracion}: ~3-5 minutos
+    \item \textbf{Dificultad}: 1-Back, 2-Back, 3-Back (niveles crecientes)
+    \item \textbf{Estimulos}: Letras (A-Z) mostradas en cuadricula
+    \item \textbf{Metricas}: Precision (%), errores, tiempo de reaccion
+\end{itemize}
+
+\subsection{Archivo: exp\_nback.csv}
+
+Columnas: stimulus, correctResponse, participantResponse, responseTime (ms), isCorrectResponse
+
+\section{Task Switching}
+
+\subsection{Objetivo y Protocolo}
+
+Mide flexibilidad cognitiva. Participantes ven estimulos (ej: "G6" o "U6") y deben
+aplicar una regla (ej: clasificar por letra o numero segun senial).
+
+Cambios de regla generan "switch cost" - slower response times - indicador de
+carga cognitiva.
+
+\subsection{Archivo: exp\_task\_switch.csv}
+
+Columnas: stimulus, expectedRule, participantResponse, responseTime, isCorrect
+
+\section{Escala de Fatiga Subjetiva (exp\_fatigue.csv)}
+
+\subsection{Protocolo}
+
+Dentro de cada fase (M1, M2, M3), los participantes completaban dos escalas visuales
+analogas (0-100):
+
+\begin{enumerate}
+    \item ``Me siento fisicamente cansado'' - Fatiga Fisica
+    \item ''Me siento mentalmente cansado'' - Fatiga Mental
+\end{enumerate}
+
+\subsection{Archivo: exp\_fatigue.csv}
+
+Columnas: measurementNumber, physicalFatigueScore, mentalFatigueScore (0-100)
+
+Filas: 3 mediciones por sesion (una en cada fase)
+
+\subsection{Interpretacion}
+
+Los autoreportes son subjetivos pero importantes para validar cambios en variables
+objetivas. Se espera:
+
+\begin{itemize}
+    \item M1 (Baseline): Puntuaciones bajas (10-30)
+    \item M2 (Post-ejercicio): Fatiga fisica alta (30-80), mental baja
+    \item M3 (Post-mental): Ambas pueden estar elevadas (20-70)
+\end{itemize}
+
+\section{Marcadores Temporales (exp\_markers.csv)}
+
+\subsection{Proposito}
+
+Archivo de sincronizacion temporal que marca eventos clave (inicio/fin de tarea,
+inicio de fase) para alinear datos de diferentes sensores que pueden tener
+desfases temporales.
+
+\subsection{Columnas}
+
+timestamp, event\_name (ej: "START\_EXERCISE", "END\_N\_BACK")
+
+\section{Resumen de Archivos Conductuales}
+
+\begin{table}[H]
+\centering
+\caption{Resumen de los 5 tipos de archivos conductuales por sesion}
+\begin{tabular}{|l|l|l|l|}
+\hline
+\textbf{Archivo} & \textbf{Registros Aprox.} & \textbf{Frecuencia} & \textbf{Proposito} \\
+\hline
+exp\_crt.csv & 60-100 & ~1 Hz (eventos) & Velocidad reaccion \\
+\hline
+exp\_nback.csv & 40-80 & ~1 Hz & Memoria trabajo, precision \\
+\hline
+exp\_task\_switch.csv & 50-100 & ~1 Hz & Flexibilidad cognitiva \\
+\hline
+exp\_fatiga.csv & 3 & Discreta (3 fases) & Autoreporte subjetivo \\
+\hline
+exp\_markers.csv & ~20 & Discreta (eventos) & Sincronizacion temporal \\
+\hline
+\end{tabular}
+\end{table}
+
+Estos archivos conductuales complementan las senales fisiologicas continuas,
+permitiendo correlacionar desempenio cognitivo con cambios en HR, EEG, EDA, etc.

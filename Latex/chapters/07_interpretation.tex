@@ -1,0 +1,84 @@
+\chapter{Interpretacion de Hallazgos y Patrones de Fatiga}
+\label{cap:interpretation}
+
+\section{Signos Fisiologicos de Fatiga Fisica}
+
+Cuando un individuo experimenta fatiga fisica significativa (ejercicio intenso),
+se observan patrones predecibles en FatigueSet:
+
+\begin{itemize}
+    \item \textbf{HR aumenta dramaticamente}: ~76 bpm (M1) a ~105 bpm (M2), mas incremento con intensidad
+    \item \textbf{HRV disminuye}: ~70 ms (M1) a ~49 ms (M3) - el corazon pierde flexibilidad
+    \item \textbf{BR se eleva}: respiracion acelerada para suministro de oxigeno
+    \item \textbf{EDA sube}: respuesta simpatica a demanda metabolica
+    \item \textbf{Autoreporte fisica}: puede aumentar 20-40 puntos en escala
+\end{itemize}
+
+La \textbf{disminucion de HRV} es el marcador mas objetivo de fatiga fisica.
+En contextos clinicos/laborales, HRV < 30 ms habitualmente indica fatiga severa.
+
+\section{Signos de Fatiga Mental}
+
+Fatiga mental tiene patrones ligeramente diferentes:
+
+\begin{itemize}
+    \item \textbf{EEG Theta aumenta}: especialmente en fases posteriores a tareas cognitivas
+    \item \textbf{EEG Alpha puede aumentar} si acompanado de somnolencia
+    \item \textbf{EDA permanece elevada}: reflejo persistente de demanda atencional
+    \item \textbf{HR puede elevarse pero menos que con fatiga fisica}
+    \item \textbf{Autoreporte mental}: aumenta posteriormente a tareas (M3)
+\end{itemize}
+
+Fatiga mental es mas sutil en senales fisiologicas - EEG es mas informatico que medidas autonomicas.
+
+\section{Recuperacion Observada}
+
+En FatigueSet, la recuperacion es \textbf{incompleta} en los ~10 minutos de M3:
+
+\begin{itemize}
+    \item \textbf{HR partially normaliza}: 105 → 84 bpm (~80\% recuperacion)
+    \item \textbf{HRV sigue comprometido}: 49 ms aun bajo (recuperacion lenta)
+    \item \textbf{EDA persiste elevada}: indica arousale aun presente
+    \item \textbf{Autorreportes}: aun moderadamente elevados
+\end{itemize}
+
+Esto sugiere que la recuperacion de fatiga es mas lenta que su induccion.
+Para fatiga severa, pueden requerirse horas de recuperacion efectiva.
+
+\section{Interacciones Fatiga Fisica × Mental}
+
+En M3 (post-tareas cognitivas despues de actividad fisica), se observan signos
+de fatiga combinada:
+\begin{itemize}
+    \item Ambos autoreportes aumentan
+    \item EEG Theta esta elevado (mental)
+    \item HRV sigue bajo (residuo de fisica)
+\end{itemize}
+
+Aunque los datos no permiten causalidad definitiva, la simultaneidad de fatiga
+sugiere competencia de recursos: cuerpo cansado + mente fatigada = estado mas
+comprometido que uno solo.
+
+\section{Validacion Cruzada de Modalidades}
+
+Un ejemplo de valor multimodal: Si solo tuvieramos EEG, podriamos confundir
+somnolencia con relajacion. Pero combinando:
+\begin{itemize}
+    \item EEG Alpha/Theta alto
+    \item + HR elevado
+    \item + EDA elevado
+    \item + Autoreporte "cansado mentalmente"
+\end{itemize}
+
+Podemos desambiguar: es fatiga (con activacion), no relajacion pasiva.
+
+\section{Implicaciones Clinicas}
+
+\begin{enumerate}
+    \item \textbf{Deteccion de fatiga}: Cualquier algoritmo debe usar multiples sensores. HR solo = falsos positivos
+    \item \textbf{Individualizacion}: Los umbrales deben normalizarse por participante
+    \item \textbf{Tiempo de recuperacion}: Planificar pausas mas largas para recuperacion efectiva
+    \item \textbf{Diferenciacion}: Fatiga fisica vs mental requiere EEG para distincion clara
+\end{enumerate}
+
+El FatigueSet provide evidencia empirica para todas estas recomendaciones.

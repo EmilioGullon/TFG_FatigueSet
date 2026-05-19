@@ -1,0 +1,218 @@
+\chapter{Metricas Fisiologicas y Firmas de Fatiga}
+\label{cap:metrics}
+
+\section{Introduction}
+
+Del dataset crudo con multiples archivos a diferentes frecuencias, se extrajeron
+\textbf{19 variables fisiologicas agregadas}. Este capitulo explica cada una y,
+crucialmente, como se relacionan con fatiga fisica y mental.
+
+\section{Metricas Cardiacas}
+
+\subsection{Frecuencia Cardiaca (HR - bpm)}
+
+\begin{small}
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|p{10cm}|}
+\hline
+\textbf{Unidad} & Latidos por minuto (bpm) \\
+\textbf{Rango normal} & 60-100 bpm (en reposo) \\
+\textbf{Rango en dataset} & 58.9-162.3 bpm \\
+\textbf{Media dataset} & 88.4 +/- 20.4 bpm \\
+\hline
+\end{tabular}
+\end{table}
+\end{small}
+
+\subsubsection{Interpretación}
+
+\begin{itemize}
+    \item \textbf{M1 (Baseline)}: HR ~76 bpm - Normal en reposo
+    \item \textbf{M2 (Post-ejercicio)}: HR ~105 bpm - AUMENTA con fatiga fisica
+    \item \textbf{M3 (Post-mental)}: HR ~84 bpm - Normaliza parcialmente
+\end{itemize}
+
+\textbf{Firma de fatiga fisica}: HR aumenta significativamente con intensidad.
+Low: 82 bpm, Medium: 95 bpm, High: 108 bpm (tendencia clara).
+
+\subsubsection{Formula}
+
+Simplemente promedio de latidos contados en ventana temporal, derivados de
+picos ECG (BioHarness) o PPG (eSense, E4).
+
+\subsection{Variabilidad de Frecuencia Cardiaca (HRV - ms)}
+
+\begin{small}
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|p{10cm}|}
+\hline
+\textbf{Unidad} & Milisegundos (SDNN - Standard Deviation of NN intervals) \\
+\textbf{Rango normal} & 30-100 ms (en reposo, signo de buena salud cardiovascular) \\
+\textbf{Rango en dataset} & 11.3-189.4 ms \\
+\textbf{Media dataset} & 69.2 +/- 31.2 ms \\
+\hline
+\end{tabular}
+\end{small}
+\end{table}
+
+\subsubsection{Interpretación}
+
+HRV mide la variabilidad en espaciamiento entre latidos. Un corazon bien regulado
+``sintoniza'' dinámicamente con demandas. HRV baja = inflexibilidad cardiovascular
+= estrés/fatiga.
+
+\begin{itemize}
+    \item \textbf{HRV Alta (>100 ms)}: Parasimpatico activo = relajacion, recuperacion
+    \item \textbf{HRV Moderada (50-100 ms)}: Balance simpático-parasimpático
+    \item \textbf{HRV Baja (<30 ms)}: Simpatico dominante = estrés agudo, fatiga
+\end{itemize}
+
+\textbf{Firma de fatiga}: HRV DISMINUYE durante M2 post-ejercicio (69->89->49 ms
+en M1->M2->M3), indicando respuesta estresante.
+
+\subsubsection{Formula}
+
+$$\text{HRV (SDNN)} = \sqrt{\frac{1}{N-1} \sum_{i=1}^{N} (NN_i - \overline{NN})^2}$$
+
+Donde $NN_i$ es la duracion del i-esimo intervalo entre latidos sucesivos (R-R).
+
+\section{Metricas Respiratorias}
+
+\subsection{Tasa Respiratoria (BR - brpm)}
+
+\begin{small}
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|p{10cm}|}
+\hline
+\textbf{Unidad} & Respiraciones por minuto (brpm) \\
+\textbf{Rango normal} & 12-20 brpm (en reposo) \\
+\textbf{Rango dataset} & 11.7-33.4 brpm \\
+\textbf{Media dataset} & 20.9 +/- 4.6 brpm \\
+\hline
+\end{tabular}
+\end{small}
+\end{table}
+
+\subsubsection{Interpretación}
+
+\begin{itemize}
+    \item M1 (Baseline): BR ~16.5 brpm - Normal
+    \item M2 (Post-ejercicio): BR ~18.9 brpm - Elevada con ejercicio
+    \item M3 (Post-mental): BR ~15.5 brpm - Normalizacion
+\end{itemize}
+
+Respiracion rapida puede indicar estrés o hiperventilacion (fatiga mental).
+Respiracion lenta (si anormal) puede indicar somnolencia severa.
+
+\section{Metricas Electrodermal}
+
+\subsection{Actividad Electrodermal (EDA - µS)}
+
+\begin{small}
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|p{10cm}|}
+\hline
+\textbf{Unidad} & Microsiemens (conductancia de piel) \\
+\textbf{Rango normal} & 0.5-2 µS (basalmente) \\
+\textbf{Rango dataset} & 0.08-7.68 µS \\
+\textbf{Media dataset} & 1.30 +/- 1.82 µS \\
+\hline
+\end{tabular}
+\end{small}
+\end{table}
+
+\subsubsection{Interpretación}
+
+EDA refleja activacion del sistema nervioso simpatico. Medida muy sensible a
+emociones, estrés y arousale cognitivo.
+
+\begin{itemize}
+    \item \textbf{EDA Baja}: Desapego mental, somnolencia
+    \item \textbf{EDA Moderada}: Concentracion normal
+    \item \textbf{EDA Alta}: Estrés, atencion, respuesta emocional
+\end{itemize}
+
+En FatigueSet: M1 (0.54 µS) -> M2 (1.68 µS) -> M3 (1.66 µS).
+Aumenta en M2 reflejando demanda de ejercicio.
+
+\section{Metricas Cerebrales: Bandas EEG}
+
+\subsection{EEG Alpha (8-12 Hz)}
+
+\textbf{Rango}: -0.5 a +1 Bels (escala logaritmica).
+\textbf{Interpretacion}: Mayor en relajacion, menor en concentracion.
+
+En dataset: Media 0.575 +/- 0.159 Bels.
+
+\subsubsection{Firma de Fatiga}
+Alpha aumentado puede indicar somnolencia si es excesivo.
+En FatigueSet: Disminuye ligeramente en M2 (actividad), vuelve en M3.
+
+\subsection{EEG Beta (12-30 Hz)}
+
+\textbf{Rango}: Similar a Alpha.
+\textbf{Interpretacion}: Mayor en atención activa, menor en relajacion.
+
+En dataset: Media 0.402 +/- 0.144 Bels.
+
+\subsubsection{Firma de Fatiga}
+Beta bajo es sugestivo de bajo arousale o fatiga cognitiva.
+
+\subsection{EEG Theta (4-8 Hz)}
+
+\textbf{Rango}: Similar.
+\textbf{Interpretacion}: Elevado en somnolencia, meditacion profunda.
+
+En dataset: Media 0.436 +/- 0.198 Bels.
+
+\subsubsection{Firma de Fatiga}
+\textbf{THETA AUMENTADO es el marcador EEG mas fuerte de fatiga mental y somnolencia}.
+
+Patrones esperados:
+\begin{itemize}
+    \item Fatiga mental severa: Theta muy elevado (>0.6 Bels)
+    \item Alerta normal: Theta moderado (0.3-0.4 Bels)
+\end{itemize}
+
+\section{Tabla Integrativa: Interpretación por Fase}
+
+\begin{table}[H]
+\centering
+\caption{Cambios esperados de metricas entre fases}
+\begin{tabular}{|l|l|l|l|}
+\hline
+\textbf{Metrica} & \textbf{M1 (Baseline)} & \textbf{M2 (Post-Ejerc.)} & \textbf{M3 (Post-Mental)} \\
+\hline
+HR & Baja (~76) & ALTA (~105) & Moderada (~84) \\
+HRV & Moderada (~70) & BAJA (~89) & Baja (~49) \\
+BR & Normal (~16) & ELEVADA (~19) & Normal (~15) \\
+EDA & Baja (~0.54) & ELEVADA (~1.68) & Elevada (~1.66) \\
+EEG Alpha & Moderada & Ligeramente baja & Aumenta \\
+EEG Beta & Moderada & Puede aumentar & Aumenta \\
+EEG Theta & Baja & Ligeramente elevada & Elevada (cansancio) \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Resumen: 19 Variables Agregadas}
+
+Las 19 columnas del archivo fatigueset\_aggregated\_features.csv son:
+
+\begin{enumerate}
+    \item participante, sesion, intensidad, intensidad\_num, fase, fase\_num (6 identificadores)
+    \item fatiga\_fisica, fatiga\_mental (2 autoreportes)
+    \item hr\_media, hr\_std (2 metricas cardiaca)
+    \item br\_media, br\_std (2 metricas respiratoria)
+    \item hrv\_media, hrv\_std (2 metricas variabilidad cardiaca)
+    \item eda\_media, eda\_std (2 metricas electrodermal)
+    \item eeg\_alpha\_media, eeg\_beta\_media, eeg\_theta\_media (3 metricas cerebrales)
+\end{enumerate}
+
+Total: 6 + 2 + 2 + 2 + 2 + 2 + 3 = 19 columnas en el archivo agregado.
+
+Cada metrica (excepto autoreportes categóricos) esta disponible como media y
+desviacion estandar, permitiendo evaluar estabilidad de la senal.

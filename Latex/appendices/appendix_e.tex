@@ -1,0 +1,45 @@
+\section*{Apendice E: Definiciones Matematicas de Metricas}
+
+\subsection*{Frecuencia Cardiaca (HR)}
+
+$$HR = \frac{\text{Numero de latidos}}{T_{\text{minutos}}} \quad [\text{bpm}]$$
+
+Donde $T$ es la duracion del periodo de observacion en minutos.
+
+\subsection*{Variabilidad de Frecuencia Cardiaca (HRV - SDNN)}
+
+$$\text{HRV (SDNN)} = \sqrt{\frac{1}{N-1} \sum_{i=1}^{N} (NN_i - \overline{NN})^2} \quad [\text{ms}]$$
+
+Donde:
+\begin{itemize}
+    \item $NN_i$ = duracion del i-esimo intervalo Normal-to-Normal (entre latidos R-R)
+    \item $\overline{NN}$ = promedio de todos los intervalos NN
+    \item $N$ = numero total de intervalos
+\end{itemize}
+
+HRV baja indica dominancia simpatica (estrés, fatiga).
+HRV alta indica regulacion parasimpatica optima (recuperacion).
+
+\subsection*{Tasa Respiratoria (BR)}
+
+$$BR = \frac{\text{Numero de ciclos respiratorios}}{T_{\text{minutos}}} \quad [\text{brpm}]$$
+
+\subsection*{Potencia EEG en Bels}
+
+$$P_{\text{Bels}} = 10 \log_{10}\left(\frac{P_{\text{señal}}}{P_{\text{referencia}}}\right) \quad [\text{Bels}]$$
+
+Escala logaritmica que comprime rangos dinamicos amplios.
+Rango tipico en FatigueSet: -1 a +1 Bels (0.1 a 10 veces potencia de referencia).
+
+\subsection*{Correlacion de Pearson}
+
+$$r = \frac{\sum_{i=1}^{n} (X_i - \overline{X})(Y_i - \overline{Y})}{\sqrt{\sum_{i=1}^{n} (X_i - \overline{X})^2 \sum_{i=1}^{n} (Y_i - \overline{Y})^2}}$$
+
+Rango: -1 (correlacion negativa perfecta) a +1 (correlacion positiva perfecta).
+$r = 0$ indica ningun correlacion lineal.
+
+\subsection*{Desviacion Estandar (SD)}
+
+$$SD = \sqrt{\frac{1}{N-1} \sum_{i=1}^{N} (x_i - \overline{x})^2}$$
+
+Medida de dispersion - cuanto varian los valores alrededor de la media.

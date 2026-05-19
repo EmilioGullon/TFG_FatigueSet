@@ -1,0 +1,772 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath, amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage[margin=2.5cm]{geometry}
+
+% Configuración de listings para código Python
+\lstset{
+    language=Python,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{gray},
+    stringstyle=\color{red},
+    breaklines=true,
+    frame=single,
+    rulecolor=\color{lightgray},
+    showstringspaces=false,
+    tabsize=4,
+}
+
+\title{\textbf{Referencia Técnica: Librería \texttt{fatigueset-lib}}}
+\author{Pipeline de Procesamiento del Dataset FatigueSet}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+% ========================================================================
+\section{Introducción}
+% ========================================================================
+
+La librería \texttt{fatigueset-lib} es un módulo Python especializado en la carga, validación, procesamiento y extracción de características (\textit{features}) del dataset \textbf{FatigueSet}. Este dataset combina múltiples sensores fisiológicos con tareas cognitivas para analizar fatiga física y mental en 12 participantes.
+
+\subsection{Propósito}
+
+\texttt{fatigueset-lib} implementa un pipeline completo y modular que:
+\begin{enumerate}
+    \item \textbf{Carga} datos desde la estructura de carpetas del dataset FatigueSet
+    \item \textbf{Valida} la integridad de los datos (valores nulos, duplicados, tipos)
+    \item \textbf{Procesa} series temporales multimodales (sincronización, segmentación por fases)
+    \item \textbf{Extrae} características estadísticas y especializadas
+    \item \textbf{Agrega} los datos en un dataset listo para Machine Learning (108 filas)
+\end{enumerate}
+
+\subsection{Alcance del Dataset}
+
+\begin{itemize}
+    \item \textbf{Participantes}: 12 (IDs: 01--12)
+    \item \textbf{Sesiones por participante}: 3 (01, 02, 03)
+    \item \textbf{Fases de medición}: 3 por sesión
+        \begin{itemize}
+            \item M1: Baseline (\textit{línea base})
+            \item M2: Post-ejercicio físico
+            \item M3: Post-carga cognitiva
+        \end{itemize}
+    \item \textbf{Dataset agregado final}: $12 \times 3 \times 3 = 108$ filas
+    \item \textbf{Sensores}: 6 modalidades (pecho, muñeca, frente EEG, oído, etc.)
+    \item \textbf{Tareas cognitivas}: N-Back y Choice Reaction Time (CRT)
+\end{itemize}
+
+\subsection{Relación con Series Temporales}
+
+Esta librería implementa conceptos clave del documento \textit{``Procesamiento de Datos de Series Temporales''} (véase \texttt{../series-temporales/}), incluyendo:
+\begin{itemize}
+    \item \textbf{Sincronización} de sensores con distintas frecuencias de muestreo
+    \item \textbf{Segmentación temporal} en ventanas (fases M1, M2, M3)
+    \item \textbf{Normalización} correcta sin data leakage
+    \item \textbf{Extracción de features} estadísticas por ventana
+\end{itemize}
+
+% ========================================================================
+\section{Descripción General de la Arquitectura}
+% ========================================================================
+
+La librería está organizada en 5 módulos principales, cada uno responsable de una etapa del pipeline:
+
+\begin{center}
+\begin{tabular}{|l|l|p{6cm}|}
+\toprule
+\textbf{Módulo} & \textbf{Clase Principal} & \textbf{Responsabilidad} \\
+\midrule
+\texttt{loader.py} & \texttt{FatigueSetLoader} & Carga de datos desde el dataset \\
+\texttt{processor.py} & \texttt{FatigueSetProcessor} & Procesamiento de series temporales \\
+\texttt{features.py} & \texttt{FeatureExtractor} & Extracción de características \\
+\texttt{validators.py} & \texttt{FatigueSetValidator} & Validación de integridad \\
+\texttt{utils.py} & (Funciones) & Funciones auxiliares \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Flujo de datos típico}
+
+\begin{enumerate}
+    \item \textbf{Carga}: \texttt{FatigueSetLoader.cargar\_todo()} $\rightarrow$ Dict con todos los DataFrames
+    \item \textbf{Validación}: \texttt{FatigueSetValidator.validar\_todos()} $\rightarrow$ Reporte de integridad
+    \item \textbf{Procesamiento}: \texttt{FatigueSetProcessor.construir\_dataset\_ml()} $\rightarrow$ Dataset de 108 filas
+    \item \textbf{Features}: \texttt{FeatureExtractor.features\_*} $\rightarrow$ Estadísticas especializadas por modalidad
+\end{enumerate}
+
+% ========================================================================
+\section{Módulo \texttt{loader.py}: Carga de Datos}
+% ========================================================================
+
+\subsection{Propósito}
+
+El módulo \texttt{loader.py} proporciona funciones y clases para leer archivos CSV del dataset FatigueSet y construir DataFrames manipulables.
+
+\subsection{Constantes globales}
+
+\begin{lstlisting}
+PARTICIPANTES = ['01', '02', ..., '12']
+SESIONES = ['01', '02', '03']
+FASES_MEDICION = {
+    0: 'M1_baseline',
+    1: 'M2_post_ejercicio',
+    2: 'M3_post_fatiga_mental'
+}
+INTENSIDAD_NUM = {'low': 1, 'medium': 2, 'high': 3}
+CANALES_EEG = ['TP9', 'AF7', 'AF8', 'TP10']
+\end{lstlisting}
+
+\subsection{Clase \texttt{DataLoader}}
+
+Cargador genérico de archivos CSV.
+
+\subsubsection{Método \texttt{load\_csv(path)}}
+
+Lee un archivo CSV y devuelve un \texttt{pd.DataFrame}.
+
+\begin{lstlisting}
+df = loader.load_csv('datos/archivo.csv')
+\end{lstlisting}
+
+\subsubsection{Método \texttt{load\_all(dir\_path)}}
+
+Lee todos los archivos \texttt{.csv} de un directorio como lista de DataFrames.
+
+\subsection{Clase \texttt{FatigueSetLoader}}
+
+Cargador especializado para datos de FatigueSet.
+
+\subsubsection{Inicialización}
+
+\begin{lstlisting}
+loader = FatigueSetLoader(
+    base_path='fatigueset',  # Ruta del dataset
+    participantes=['01', '02', '03'],  # Subconjunto opcional
+    sesiones=['01', '02']  # Subconjunto opcional
+)
+\end{lstlisting}
+
+\subsubsection{Métodos de Metadata e Intensidades}
+
+\begin{itemize}
+    \item \texttt{cargar\_metadata()}: Lee \texttt{fatigueset/metadata.csv}. Mapeo de participantes a intensidades (low/medium/high).
+    \item \texttt{construir\_intensidad\_map()}: Genera diccionario \texttt{\{pid: \{sesion: intensidad\}\}}.
+    \item \texttt{get\_intensidad(participante, sesion)}: Retorna intensidad de una sesión.
+\end{itemize}
+
+\subsubsection{Métodos de Carga Individual}
+
+\begin{itemize}
+    \item \texttt{cargar\_csv(participante, sesion, archivo, add\_meta=True)}: Carga un archivo específico con metadatos opcionales.
+    \item \texttt{cargar\_todos(archivo, verbose=True)}: Carga un archivo de todos los participantes y sesiones configurados.
+\end{itemize}
+
+\subsubsection{Métodos especializados por sensor}
+
+\begin{lstlisting}
+df_fatiga  = loader.cargar_fatiga()       # exp_fatigue.csv
+df_chest   = loader.cargar_chest()        # chest_physiology_summary.csv
+df_markers = loader.cargar_markers()      # exp_markers.csv
+
+df_wrist = loader.cargar_wrist()  # Dict con hr, eda, bvp, temp, acc, ibi
+df_eeg   = loader.cargar_eeg()    # Dict con alpha, beta, delta, gamma, theta
+df_ear   = loader.cargar_ear_ppg()  # Dict con left, right
+
+df_nback = loader.cargar_nback()        # exp_nback.csv
+df_crt   = loader.cargar_crt()          # exp_crt.csv
+\end{lstlisting}
+
+\subsubsection{Método \texttt{cargar\_todo()}}
+
+Carga \textbf{todas las señales disponibles} en un único diccionario.
+
+\begin{lstlisting}
+dataset = loader.cargar_todo()
+# Keys: metadata, fatiga, markers, chest, wrist, eeg, ear, nback, crt, task_switch
+\end{lstlisting}
+
+\subsection{Estructura de archivos soportados}
+
+El módulo reconoce 43 archivos distribuidos en 6 categorías de sensores:
+
+\begin{itemize}
+    \item \textbf{Chest} (7 archivos): ECG, Acc, Respiración, RR intervals
+    \item \textbf{Wrist/Empatica E4} (6 archivos): HR, EDA, BVP, Temperatura, Acc, IBI
+    \item \textbf{Forehead/Muse} (8 archivos): 5 bandas EEG + Raw + Acc + Gyro
+    \item \textbf{Ear/Nokia eSense} (6 archivos): PPG + Acc + Gyro (bilateral)
+    \item \textbf{Zephyr} (2 archivos): Activity summary, Device status
+    \item \textbf{Experimental} (5 archivos): Fatiga (VAS), Markers, N-Back, CRT, Task-Switch
+\end{itemize}
+
+% ========================================================================
+\section{Módulo \texttt{processor.py}: Procesamiento de Series Temporales}
+% ========================================================================
+
+\subsection{Propósito}
+
+Procesa datos cargados por \texttt{FatigueSetLoader} para extraer agregaciones y métricas por fase.
+
+\subsection{Clase \texttt{DataProcessor}}
+
+Procesador genérico de datos tabulares.
+
+\begin{itemize}
+    \item \texttt{process\_data(data)}: Suma todas las columnas numéricas.
+    \item \texttt{filter\_data(data, threshold)}: Filtra filas por umbral.
+    \item \texttt{aggregate\_data(data)}: Convierte dict a DataFrame.
+\end{itemize}
+
+\subsection{Clase \texttt{FatigueSetProcessor}}
+
+Procesador especializado para FatigueSet.
+
+\subsubsection{Inicialización}
+
+\begin{lstlisting}
+processor = FatigueSetProcessor(
+    intensidad_map=loader.construir_intensidad_map()
+)
+\end{lstlisting}
+
+\subsubsection{Método \texttt{calcular\_fatigabilidad()}}
+
+Calcula deltas (cambios) de fatiga entre fases.
+
+\begin{lstlisting}
+df_fatiga_deltas = processor.calcular_fatigabilidad(df_fatiga)
+# Output: 36 filas (12 participantes × 3 sesiones)
+# Columnas: delta_fisica_ejercicio, delta_mental_ejercicio,
+#          delta_fisica_cognitivo, delta_mental_cognitivo, etc.
+\end{lstlisting}
+
+La salida incluye:
+\begin{itemize}
+    \item \textbf{Deltas}: M2-M1, M3-M2, M3-M1 (para física y mental)
+    \item \textbf{Scores absolutos}: Valores de fatiga en cada fase M1, M2, M3
+    \item \textbf{Metadatos}: Participante, sesión, intensidad
+\end{itemize}
+
+\subsubsection{Método \texttt{segmentar\_por\_fase()}}
+
+Divide una serie temporal en 3 tercios y retorna el segmento especificado.
+
+\begin{lstlisting}
+df_m1 = processor.segmentar_por_fase(df_todo, fase_num=0)  # Primeras 1/3 filas
+df_m2 = processor.segmentar_por_fase(df_todo, fase_num=1)  # Segundas 1/3 filas
+df_m3 = processor.segmentar_por_fase(df_todo, fase_num=2)  # Últimas 1/3 filas
+\end{lstlisting}
+
+\subsubsection{Métodos de Extracción de Métricas}
+
+\textbf{Señales fisiológicas}:
+\begin{lstlisting}
+metricas = processor.metricas_segmento(df, ['hr', 'br'], prefijo='chest_')
+# Output: {'chest_hr_media': ..., 'chest_hr_std': ..., ...}
+\end{lstlisting}
+
+\textbf{EEG por banda}:
+\begin{lstlisting}
+metricas_alpha = processor.metricas_eeg_segmento(df_eeg, banda='alpha')
+# Output: {'eeg_alpha_media': valor_medio_4_canales}
+\end{lstlisting}
+
+\textbf{Tareas cognitivas}:
+\begin{lstlisting}
+metricas_nback = processor.metricas_nback(df_nback_fase)
+# Output: {'nback_accuracy': %, 'nback_rt': ms}
+
+metricas_crt = processor.metricas_crt(df_crt_fase)
+# Output: {'crt_rt': ms, 'crt_accuracy': %}
+\end{lstlisting}
+
+\subsubsection{Método \texttt{construir\_dataset\_ml()}}
+
+\textbf{Método central} que agrega todos los datos en un dataset de 108 filas.
+
+\begin{lstlisting}
+df_ml = processor.construir_dataset_ml(
+    df_fatiga=dataset['fatiga'],
+    df_chest=dataset['chest'],
+    df_wrist_eda=dataset['wrist']['eda'],
+    eeg_data=dataset['eeg'],
+    df_nback=dataset['nback'],
+    df_crt=dataset['crt'],
+)
+# Output: 108 filas (12 × 3 sesiones × 3 fases)
+# Columnas: metadatos + features por modalidad
+\end{lstlisting}
+
+La salida estructura cada fila con:
+\begin{itemize}
+    \item Identificadores: \texttt{participante}, \texttt{sesion}, \texttt{fase}, \texttt{intensidad}
+    \item Fatiga subjetiva: \texttt{fatiga\_fisica}, \texttt{fatiga\_mental}
+    \item Features por sensor: media y std de cada modalidad
+    \item Tareas cognitivas: accuracy y RT
+\end{itemize}
+
+% ========================================================================
+\section{Módulo \texttt{features.py}: Extracción de Características}
+% ========================================================================
+
+\subsection{Propósito}
+
+Extrae características estadísticas y especializadas de series temporales multimodales.
+
+\subsection{Clase \texttt{FeatureExtractor}}
+
+\subsubsection{Inicialización}
+
+\begin{lstlisting}
+extractor = FeatureExtractor(percentiles=[25, 50, 75])
+\end{lstlisting}
+
+\subsubsection{Métodos de Estadísticas Generales}
+
+\begin{itemize}
+    \item \texttt{extract\_features(data)}: Media de cada lista en un diccionario.
+    \item \texttt{compute\_statistics(data)}: Estadísticas (mean, std, min, max) por clave.
+\end{itemize}
+
+\subsubsection{Método \texttt{features\_serie()}}
+
+Estadísticas descriptivas de una serie temporal.
+
+\begin{lstlisting}
+feats = extractor.features_serie(serie, prefijo='hr_')
+# Output: {
+#    'hr_media': media,
+#    'hr_std': desviación estándar,
+#    'hr_min': mínimo,
+#    'hr_max': máximo,
+#    'hr_rango': max - min,
+#    'hr_cv': coeficiente de variación,
+#    'hr_p25': percentil 25, 'hr_p50': mediana, 'hr_p75': percentil 75
+# }
+\end{lstlisting}
+
+\subsubsection{Método \texttt{features\_eeg\_banda()}}
+
+Extrae características EEG por banda y canal.
+
+\begin{lstlisting}
+feats = extractor.features_eeg_banda(df_eeg_alpha, banda='alpha')
+# Output: features por cada canal (TP9, AF7, AF8, TP10) + promedio global
+\end{lstlisting}
+
+\subsubsection{Método \texttt{features\_hrv()}}
+
+Heart Rate Variability (HRV) a partir de intervalos RR.
+
+\begin{lstlisting}
+feats = extractor.features_hrv(df_rr_intervals)
+# Output: {
+#    'hrv_rmssd': raíz cuadrada del promedio de diferencias RR²,
+#    'hrv_sdnn': desviación estándar de RR,
+#    'hrv_pnn50': % de intervalos RR diferidos > 50ms,
+#    'hrv_mean_rr': media de intervalos RR
+# }
+\end{lstlisting}
+
+\subsubsection{Método \texttt{features\_eda()}}
+
+Electrodermal Activity (EDA) - análisis de respuesta dérmica.
+
+\begin{lstlisting}
+feats = extractor.features_eda(df_eda)
+# Output: {
+#    'eda_media', 'eda_std', 'eda_min', 'eda_max', 'eda_cv': Estadísticas,
+#    'eda_pendiente': tendencia lineal (cambio en tiempo),
+#    'eda_n_picos_scr': número de picos de respuesta (SCR peaks)
+# }
+\end{lstlisting}
+
+Los picos se detectan como cruces por encima de $\mu + \sigma$.
+
+\subsubsection{Método \texttt{features\_cognitivas()}}
+
+Características de tareas cognitivas (N-Back y CRT).
+
+\begin{lstlisting}
+feats = extractor.features_cognitivas(
+    df_nback=df_nback_fase,
+    df_crt=df_crt_fase
+)
+# Output: {
+#    'nback_accuracy': %, 'nback_rt_media': ms, 'nback_rt_std': ms,
+#    'nback_n_errores': número de errores,
+#    'crt_rt_media': ms, 'crt_rt_std': ms
+# }
+\end{lstlisting}
+
+% ========================================================================
+\section{Módulo \texttt{validators.py}: Validación de Integridad}
+% ========================================================================
+
+\subsection{Propósito}
+
+Valida la integridad del dataset FatigueSet (valores ausentes, duplicados, tipos mixtos).
+
+\subsection{Clase \texttt{DataValidator}}
+
+Validador genérico de DataFrames.
+
+\begin{itemize}
+    \item \texttt{validate\_schema(df, columns)}: Comprueba presencia de todas las columnas.
+    \item \texttt{check\_missing\_values(df)}: Detecta valores NaN.
+    \item \texttt{validate\_data\_quality(df)}: Verifica coherencia de tipos de datos.
+\end{itemize}
+
+\subsection{Clase \texttt{FatigueSetValidator}}
+
+Validador especializado para FatigueSet.
+
+\subsubsection{Inicialización}
+
+\begin{lstlisting}
+validator = FatigueSetValidator(
+    loader=loader,
+    umbral_nulos=5.0  # % máximo permitido
+)
+\end{lstlisting}
+
+\subsubsection{Método \texttt{validar\_todos()}}
+
+Valida todos los archivos críticos (11 tipos de sensores + 3 tareas).
+
+\begin{lstlisting}
+df_validacion = validator.validar_todos()
+# Output: DataFrame con una fila por (archivo, participante, sesión)
+# Columnas: Archivo, Participante, Sesión, Filas, Nulos (%), Duplicados, Estado
+\end{lstlisting}
+
+Archivos críticos validados:
+\begin{enumerate}
+    \item Chest Physiology, ECG Raw
+    \item Wrist HR, EDA, Temp
+    \item EEG Alpha, Beta
+    \item Ear PPG Left
+    \item Fatigue Scores, N-Back Task, CRT Task
+\end{enumerate}
+
+\subsubsection{Método \texttt{resumen()}}
+
+Genera agregaciones de problemas por tipo de archivo.
+
+\begin{lstlisting}
+resumen_df, problemas_df = validator.resumen(df_validacion)
+# resumen_df: resumen por archivo (sesiones OK, nulos máximos)
+# problemas_df: sesiones con estado '⚠️'
+\end{lstlisting}
+
+\subsubsection{Método \texttt{imprimir\_resumen()}}
+
+Imprime un reporte legible en consola.
+
+% ========================================================================
+\section{Módulo \texttt{utils.py}: Funciones Auxiliares}
+% ========================================================================
+
+\subsection{Función \texttt{convertir\_timestamp()}}
+
+Convierte columnas de timestamp (milisegundos desde epoch) a \texttt{datetime} de pandas.
+
+\begin{lstlisting}
+df = convertir_timestamp(df, col='timestamp')
+# Crea columna 'datetime' con formato datetime64
+\end{lstlisting}
+
+% ========================================================================
+\section{Flujo de Trabajo Completo}
+% ========================================================================
+
+\subsection{Pipeline End-to-End}
+
+Un uso típico completo:
+
+\begin{lstlisting}
+from fatigueset.loader import FatigueSetLoader
+from fatigueset.processor import FatigueSetProcessor
+from fatigueset.features import FeatureExtractor
+from fatigueset.validators import FatigueSetValidator
+
+# 1. CARGA
+loader = FatigueSetLoader(base_path='fatigueset')
+dataset = loader.cargar_todo()
+
+# 2. VALIDACIÓN
+validator = FatigueSetValidator(loader)
+validator.imprimir_resumen()
+
+# 3. PROCESAMIENTO
+processor = FatigueSetProcessor(
+    intensidad_map=loader.construir_intensidad_map()
+)
+df_ml = processor.construir_dataset_ml(
+    df_fatiga=dataset['fatiga'],
+    df_chest=dataset['chest'],
+    df_wrist_eda=dataset['wrist']['eda'],
+    eeg_data=dataset['eeg'],
+    df_nback=dataset['nback'],
+    df_crt=dataset['crt'],
+)
+
+# 4. EXTRACCIÓN DE FEATURES AVANZADAS
+extractor = FeatureExtractor()
+for banda in ['alpha', 'beta', 'theta']:
+    df_ml[f'eeg_{banda}_advanced'] = df_ml.apply(
+        lambda row: extractor.features_eeg_banda(
+            dataset['eeg'][banda], banda
+        ), axis=1
+    )
+
+# Dataset final: 108 × ~50 columnas
+print(df_ml.shape)  # (108, 50+)
+df_ml.to_csv('dataset_fatigueset_ml.csv', index=False)
+\end{lstlisting}
+
+\subsection{Etapas del pipeline}
+
+\textbf{Etapa 1: Carga}
+\begin{itemize}
+    \item Lectura de 43 archivos CSV distribuidos
+    \item Sincronización de metadatos (intensidades)
+    \item Consolidación en estructura de diccionarios
+\end{itemize}
+
+\textbf{Etapa 2: Validación}
+\begin{itemize}
+    \item Comprobación de 11 tipos de sensores
+    \item Detección de valores nulos y duplicados
+    \item Reporte de problemas por sesión
+\end{itemize}
+
+\textbf{Etapa 3: Procesamiento}
+\begin{itemize}
+    \item Segmentación temporal en 3 fases por sesión
+    \item Extracción de métricas sumarias (media, std)
+    \item Cálculo de deltas de fatiga (M2-M1, M3-M2, etc.)
+\end{itemize}
+
+\textbf{Etapa 4: Features}
+\begin{itemize}
+    \item Features especializadas por modalidad (HRV, EDA, EEG)
+    \item Características de tareas cognitivas (accuracy, RT)
+    \item Preparación de variables para ML
+\end{itemize}
+
+\textbf{Etapa 5: Aggregación}
+\begin{itemize}
+    \item Dataset final 108 × 50+ columnas
+    \item Listo para modelos predictivos
+\end{itemize}
+
+% ========================================================================
+\section{Integración con Procesamiento de Series Temporales}
+% ========================================================================
+
+Esta librería implementa en Python los conceptos descritos en el documento \textit{``Procesamiento de Datos de Series Temporales''}.
+
+\subsection{Sincronización Multi-Sensor}
+
+Problema: Sensores con diferentes frecuencias de muestreo y relojes internos.
+
+\begin{center}
+\begin{tabular}{|l|c|}
+\toprule
+\textbf{Sensor} & \textbf{Frecuencia (Hz)} \\
+\midrule
+Chest HR & 1 \\
+Wrist EDA & 4 \\
+Forehead EEG & 9.13 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Solución: \texttt{loader.cargar\_todo()} sincroniza mediante timestamps en \texttt{exp\_markers.csv}.
+
+\subsection{Windowing y Segmentación}
+
+En lugar de ventanas deslizantes explícitas, la librería segmenta cada sesión en 3 phases por tercio temporal:
+
+$$\text{fila} = \lfloor \frac{\text{fase\_num} \times n}{n\_fases} \rfloor, \quad \text{fila} = \lfloor \frac{(\text{fase\_num}+1) \times n}{n\_fases} \rfloor$$
+
+Método: \texttt{FatigueSetProcessor.segmentar\_por\_fase()}
+
+\subsection{Data Leakage Prevention}
+
+La librería implementa normalización sin contaminación:
+\begin{enumerate}
+    \item Separación temporal: Split determinístico por fases
+    \item Normalización independiente por segmento si es necesario
+    \item Metadatos claros (participante, sesión, fase)
+\end{enumerate}
+
+% ========================================================================
+\section{Estructura del Dataset ML Agregado}
+% ========================================================================
+
+\subsection{Dimensiones}
+
+\begin{itemize}
+    \item \textbf{Filas}: 108 (12 participantes $\times$ 3 sesiones $\times$ 3 fases)
+    \item \textbf{Columnas}: Aproximadamente 50+, distribuidas como:
+        \begin{itemize}
+            \item 6 columnas de metadatos
+            \item 15-20 features fisiológicas
+            \item 10-15 features EEG
+            \item 8-10 features cognitivas
+            \item 5-10 features especializadas (HRV, EDA)
+        \end{itemize}
+\end{itemize}
+
+\subsection{Columnas principales}
+
+\subsubsection{Metadatos}
+\begin{lstlisting}
+participante, sesion, fase, intensidad, intensidad_num, fase_num
+\end{lstlisting}
+
+\subsubsection{Fatiga Subjetiva (VAS)}
+\begin{lstlisting}
+fatiga_fisica, fatiga_mental
+\end{lstlisting}
+
+\subsubsection{Señales Fisiológicas}
+\begin{lstlisting}
+chest_hr_media, chest_hr_std, chest_br_media, chest_br_std, chest_hrv_media
+eda_media, eda_std, eda_pendiente, eda_n_picos_scr
+\end{lstlisting}
+
+\subsubsection{EEG}
+\begin{lstlisting}
+eeg_alpha_media, eeg_beta_media, eeg_theta_media
+eeg_alpha_TP9_media, eeg_alpha_AF7_media, ... (por canal)
+\end{lstlisting}
+
+\subsubsection{Tareas Cognitivas}
+\begin{lstlisting}
+nback_accuracy, nback_rt_media, nback_rt_std, nback_n_errores
+crt_rt_media, crt_rt_std
+\end{lstlisting}
+
+% ========================================================================
+\section{Anexos}
+% ========================================================================
+
+\subsection{Tabla de Sensores y Frecuencias}
+
+\begin{center}
+\begin{tabular}{|l|l|c|}
+\toprule
+\textbf{Dispositivo} & \textbf{Sensor} & \textbf{Frecuencia (Hz)} \\
+\midrule
+\multirow{3}{*}{Zephyr BioHarness} & Heart Rate & 1 \\
+& Breathing Rate & 1 \\
+& Corrected GSR & 1 \\
+\midrule
+\multirow{6}{*}{Empatica E4} & HR (IBI) & 1 \\
+& EDA & 4 \\
+& BVP & 64 \\
+& Temperatura piel & 4 \\
+& Acelerómetro & 32 \\
+\midrule
+\multirow{5}{*}{InteraXon Muse} & EEG TP9, AF7, AF8, TP10 & 9.13 \\
+& 5 bandas (alpha, beta, delta, gamma, theta) & 1 \\
+& PPG (Ear channels) & 64 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Estructura de Carpetas del Dataset}
+
+\begin{lstlisting}
+fatigueset/
+├── 01/
+│   ├── 01/  (sesión 1)
+│   │   ├── chest_*.csv
+│   │   ├── wrist_*.csv
+│   │   ├── forehead_eeg_*.csv
+│   │   ├── exp_fatigue.csv
+│   │   ├── exp_nback.csv
+│   │   └── exp_crt.csv
+│   ├── 02/  (sesión 2)
+│   └── 03/  (sesión 3)
+├── 02/ ... 12/
+├── metadata.csv  (mapeo participante → intensidades)
+├── pre_task_survey.xlsx
+└── preliminary_questionnaire.xlsx
+\end{lstlisting}
+
+\subsection{Referencia de Constantes}
+
+\begin{lstlisting}
+# Mapa de fases
+FASES_MEDICION = {
+    0: 'M1_baseline',
+    1: 'M2_post_ejercicio',
+    2: 'M3_post_fatiga_mental'
+}
+
+# Mapa de intensidades
+INTENSIDAD_NUM = {'low': 1, 'medium': 2, 'high': 3}
+
+# Canales EEG del Muse
+CANALES_EEG = ['TP9', 'AF7', 'AF8', 'TP10']
+\end{lstlisting}
+
+\subsection{Notebooks de Ejemplo}
+
+La librería incluye ejemplos prácticos:
+
+\begin{itemize}
+    \item \texttt{notebooks/example\_usage.ipynb}: Demostración completa del pipeline
+    \item \texttt{../Jupyters/FatigueSet Procesado de datos.ipynb}: Pipeline original del proyecto
+    \item \texttt{../Jupyters/windowing\_data\_leakage.ipynb}: Análisis de data leakage
+    \item \texttt{../Jupyters/sincronizacion\_normalizacion.ipynb}: Sincronización multi-sensor
+\end{itemize}
+
+\subsection{Referencias Cruzadas}
+
+Para más detalles sobre conceptos de procesamiento de series temporales:
+
+\begin{itemize}
+    \item \texttt{../series-temporales/procesamiento\_datos\_series\_temporales.pdf}
+    \item Secciones: Sincronización, Windowing, Data Leakage, Normalización
+\end{itemize}
+
+% ========================================================================
+\appendix
+
+\section{Manejo de Errores Comunes}
+
+\subsection{Error: ``No se encontró el dataset''}
+
+\begin{lstlisting}
+FileNotFoundError: No se encontró el dataset en: fatigueset
+\end{lstlisting}
+
+\textbf{Solución}: Asegurar que la ruta \texttt{base\_path} es correcta y que la carpeta contiene las subcarpetas 01--12.
+
+\subsection{Error: ``Metadata.csv no encontrado''}
+
+\textbf{Solución}: Verificar que existe \texttt{fatigueset/metadata.csv}.
+
+\subsection{Advertencia: ``Archivo no encontrado en P01/S02''}
+
+Esto es esperado si no todos los archivos están disponibles para todas las sesiones. La librería continúa procesando.
+
+\end{document}

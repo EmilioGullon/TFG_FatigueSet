@@ -1,0 +1,168 @@
+\documentclass[12pt, a4paper, oneside, openany]{report}
+
+% PAQUETES ESSENCIALES
+\usepackage[spanish]{babel}
+\usepackage[left=2cm, right=2cm, top=2cm, bottom=2cm]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{tocbibind}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{tikz}
+\usepackage{rotating}
+\usepackage{color}
+
+% CONFIGURACION DE ESTILOS
+\pagestyle{fancy}
+\fancyhead[L]{\small\nouppercase{\leftmark}}
+\fancyhead[R]{\small\thepage}
+\fancyfoot[C]{}
+\renewcommand{\footrulewidth}{0pt}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% COLORES PARA LATEX
+\definecolor{darkblue}{rgb}{0, 0, 0.5}
+\definecolor{darkgreen}{rgb}{0, 0.4, 0}
+\definecolor{darkred}{rgb}{0.6, 0, 0}
+
+% CONFIGURACION DE HIPERVINCULOS
+\hypersetup{
+    colorlinks=true,
+    linkcolor=darkblue,
+    filecolor=darkblue,
+    urlcolor=darkblue,
+    citecolor=darkblue,
+    pdftitle={FatigueSet Dataset - Documentacion Completa},
+    pdfauthor={TFG - Analisis de Fatiga Multimodal},
+    pdfsubject={Dataset FatigueSet}
+}
+
+% CONFIGURACION DE CODIGO
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny,
+    keywordstyle=\color{darkblue}\bfseries,
+    commentstyle=\color{darkgreen},
+    stringstyle=\color{darkred},
+    language=Python,
+    showstringspaces=false,
+    tabsize=2,
+    captionpos=b
+}
+
+% ESPACIADO
+\renewcommand{\baselinestretch}{1.05}
+\setlength{\parindent}{0.5cm}
+\setlength{\parskip}{0.15cm}
+
+% TITULO Y AUTOR
+\title{\Huge \textbf{FatigueSet:\\Documentacion Completa del Dataset}}
+\author{\textit{Dataset Multimodal para Modelado de Fatiga Mental y Fisica}\\[0.5cm]
+        \small{Basado en: Kalanadhabhatta et al. (2021)\\
+        Pervasive Health Conference}
+        }
+\date{\today}
+
+% ============================================================
+% INICIO DEL DOCUMENTO
+% ============================================================
+
+\begin{document}
+
+% PORTADA
+\maketitle
+
+% RESUMEN EJECUTIVO
+\begin{abstract}
+\noindent
+Este documento proporciona una explicacion completa y detallada del dataset FatigueSet,
+un dataset multimodal disenado para estudiar fatiga mental y fisica en seres humanos.
+
+El dataset contiene datos de 12 participantes en 3 sesiones experimentales cada uno,
+con mediciones de 4 dispositivos wearables simultaneamente (Nokia Bell Labs eSense,
+Muse S Headband, Zephyr BioHarness 3.0 y Empatica E4), junto con tareas cognitivas
+estandarizadas y autoreportes de fatiga.
+
+Se explica en detalle:
+\begin{itemize}
+    \item La estructura y protocolo experimental del estudio
+    \item Las especificaciones tecnicas de cada sensor wearable
+    \item Las tareas cognitivas y metricas comportamentales recopiladas
+    \item Las 19 variables fisiologicas agregadas del dataset
+    \item Analisis cuantitativos con 14 visualizaciones
+    \item Patrones de fatiga observados en los datos
+    \item Como utilizar el dataset en investigaciones propias
+\end{itemize}
+
+La audiencia objetivo incluye investigadores, estudiantes y profesionales
+que necesiten un entendimiento integral del dataset.
+\end{abstract}
+
+\newpage
+
+% TABLA DE CONTENIDOS
+\tableofcontents
+
+\newpage
+
+% ============================================================
+% CAPITULOS
+% ============================================================
+
+\input{chapters/01_introduction}
+\input{chapters/02_overview}
+\input{chapters/03_sensors}
+\input{chapters/04_cognitive_tasks}
+\input{chapters/05_metrics}
+\input{chapters/06_analysis}
+\input{chapters/07_interpretation}
+\input{chapters/08_usage_guide}
+
+% ============================================================
+% APENDICES
+% ============================================================
+
+\appendix
+
+\input{appendices/appendix_a}
+\input{appendices/appendix_b}
+\input{appendices/appendix_c}
+\input{appendices/appendix_d}
+\input{appendices/appendix_e}
+
+% ============================================================
+% REFERENCIAS
+% ============================================================
+
+\begin{thebibliography}{99}
+
+\bibitem{kalanadhabhatta2021} Kalanadhabhatta, M., Min, C., Montanari, A., \& Kawsar, F. (2021).
+``FatigueSet: A Multi-modal Dataset for Modeling Mental Fatigue and Fatigability.''
+\textit{Proceedings of the 15th International Conference on Pervasive Computing Technologies for Healthcare (Pervasive Health)},
+December 6--8, 2021.
+
+\bibitem{empatica2023} Empatica Inc. (2023). ``E4 wristband specifications and data format.''
+Retrieved from \url{https://www.empatica.com/research/e4/}
+
+\bibitem{muse2023} Muse by Interaxon. (2023). ``Muse S Headband EEG specifications.''
+Retrieved from \url{https://choosemuse.com/}
+
+\bibitem{esense2023} Nokia Bell Labs. (2023). ``eSense earable specifications.''
+Retrieved from \url{https://www.esense.io/datasets/}
+
+\bibitem{zephyr2023} Medtronic. (2023). ``Zephyr BioHarness chest monitor specifications.''
+
+\end{thebibliography}
+
+\end{document}

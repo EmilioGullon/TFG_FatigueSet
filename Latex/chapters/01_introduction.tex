@@ -1,0 +1,124 @@
+\chapter{Introduccion}
+\label{cap:introduction}
+
+\section{Contexto: Fatiga Mental y Fisica}
+
+La fatiga es un estado fisiologico y psicologico complejo que afecta significativamente
+el rendimiento cognitivo, la capacidad fisica y la calidad de vida. En contextos
+academicos, laborales y deportivos, entender y medir la fatiga es crucial para
+optimizar el desempenho y prevenir problemas de salud.
+
+La fatiga se puede clasificar en dos categorias principales:
+
+\begin{itemize}
+    \item \textbf{Fatiga Fisica}: Cansancio o agotamiento muscular resultante del
+          esfuerzo fisico intenso o prolongado. Se asocia con cambios en el metabolismo,
+          acumulacion de lactato y deplecion de glucogeno.
+
+    \item \textbf{Fatiga Mental}: Cansancio cognitivo resultante de la concentracion
+          prolongada o tareas cognitivamente demandantes. Se asocia con cambios en
+          actividad cerebral, control ejecutivo y vigilancia.
+\end{itemize}
+
+\section{Importancia del Monitoreo Multimodal}
+
+Durante decadas, los investigadores han intentado entender la fatiga mediante
+distintos enfoques:
+
+\begin{enumerate}
+    \item \textbf{Mediciones Subjetivas}: Cuestionarios y escalas de autopercepcion
+          (ej: Escala Visual Analogica de Fatiga). Ventaja: economicas. Desventaja:
+          susceptibles a sesgo y variabilidad individual.
+
+    \item \textbf{Mediciones Fisiologicas Aisladas}: Frecuencia cardiaca,
+          electroencefalograma (EEG), o respuesta electrodermal medidas
+          independientemente. Ventaja: objetivas. Desventaja: incompletas.
+
+    \item \textbf{Monitoreo Multimodal Simultaneo}: Multiples sensores wearables
+          registrando simultaneamente diferentes variables fisiologicas, comportamentales
+          y cognitivas. Ventaja: comprensiva, registra interacciones entre sistemas.
+          Desventaja: mayor complejidad de analisis.
+\end{enumerate}
+
+El enfoque multimodal es particularmente importante porque la fatiga no es un
+fenomeno unidimensional. Por ejemplo:
+
+\begin{itemize}
+    \item La frecuencia cardiaca puede aumentar o disminuir segun el tipo y
+          intensidad de actividad y el estado cardiovascular del individuo.
+    \item La actividad electrodermal refleja arousale (activacion del sistema nervioso
+          simpatico) pero puede estar influenciada por factores emocionales o
+          termicos.
+    \item La actividad cerebral (EEG) proporciona informacion sobre estados cognitivos
+          (alerta vs. somnolencia) pero requiere interpretacion cuidadosa de bandas
+          de frecuencia.
+\end{itemize}
+
+Al monitorear multiples modalidades simultaneamente, podemos:
+\begin{itemize}
+    \item Detectar \textbf{patrones complejos} que emergen de la interaccion entre sistemas
+    \item \textbf{Validar hallazgos} comparando senales independientes
+    \item Desarrollar \textbf{modelos predictivos} mas robustos y generalizables
+    \item Identificar \textbf{diferencias individuales} en como cada persona manifiesta la fatiga
+\end{itemize}
+
+\section{FatigueSet: Su Importancia en la Investigacion}
+
+Aunque existen datasets de EEG, de actividad cardiaca, o de tareas cognitivas de
+forma aislada, los datasets verdaderamente multimodales y accesibles publicamente
+son escasos. FatigueSet llena este vacio proporcionando:
+
+\begin{itemize}
+    \item Una \textbf{recopilacion completa} de 4 dispositivos wearables de marcas
+          comerciales diferentes pero bien documentadas
+    \item Un \textbf{protocolo experimental riguroso} con contrabalanceo para
+          investigar fatiga a multiples intensidades
+    \item \textbf{Tareas cognitivas estandarizadas} (CRT, N-Back, Task Switching)
+          junto con autoreportes validados
+    \item \textbf{Datos procesados y limpios} listos para analisis, junto con codigo
+          y documentacion
+\end{itemize}
+
+Este dataset ha permitido y seguira permitiendo investigacion en:
+\begin{itemize}
+    \item Deteccion automatica de fatiga mediante machine learning
+    \item Entendimiento de mecanismos fisiologicos subyacentes a fatiga mental vs fisica
+    \item Individualizacion de perfiles de respuesta a fatiga
+    \item Validacion de nuevos sensores wearables
+    \item Estudios de recuperacion y resilencia ante fatiga
+\end{itemize}
+
+\section{Objetivos de Este Documento}
+
+Este documento tiene como objetivo proporcionar una referencia completa y autocontenida
+del dataset FatigueSet. No asume conocimiento previo del dataset pero mantiene
+rigor academico y tecnico.
+
+Despues de leer este documento, el lector podra:
+
+\begin{enumerate}
+    \item Comprender la estructura general del estudio que genero el dataset
+    \item Identificar que dispositivo recopilo que tipo de senales
+    \item Interpretar cada una de las 19 variables fisiologicas disponibles
+    \item Entender los patrones de fatiga observados en los datos
+    \item Cargar y utilizar el dataset en sus propios analisis
+    \item Reproducir los analisis mostrados en este documento
+\end{enumerate}
+
+\section{Estructura de Este Documento}
+
+El documento esta organizado en 8 capitulos progresivos:
+
+\begin{description}
+    \item[Capitulo 1] (Este capitulo) - Motivacion y contexto
+    \item[Capitulo 2] - Vision general del dataset y protocolo experimental
+    \item[Capitulo 3] - Los 4 dispositivos wearables utilizados
+    \item[Capitulo 4] - Las 5 tareas cognitivas y metricas conductuales
+    \item[Capitulo 5] - Las 19 variables fisiologicas extraidas (enfoque en patrones de fatiga)
+    \item[Capitulo 6] - Analisis cuantitativos y 14 visualizaciones de datos
+    \item[Capitulo 7] - Interpretacion de hallazgos y signos de fatiga
+    \item[Capitulo 8] - Guia practica para utilizar el dataset
+\end{description}
+
+Los apendices incluyen especificaciones tecnicas completas, instrumentos de encuesta,
+codigo de ejemplo y un glosario de terminos fisiologicos y tecnicos.

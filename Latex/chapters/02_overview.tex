@@ -1,0 +1,186 @@
+\chapter{Vision General del Dataset}
+\label{cap:overview}
+
+\section{Caracteristicas Principales}
+
+El dataset FatigueSet contiene datos fisiologicos y comportamentales de
+\textbf{12 participantes} que realizaron un protocolo experimental estructurado
+para inducir fatiga mental y fisica controlada. Los datos fueron recopilados
+en \textbf{3 sesiones} por participante, y cada sesion se dividio en
+\textbf{3 fases de medicion}.
+
+Las dimensiones principales del dataset son:
+
+\begin{table}[H]
+\centering
+\caption{Dimensiones principales del FatigueSet}
+\begin{tabular}{|l|r|p{5cm}|}
+\hline
+\textbf{Dimension} & \textbf{Valor} & \textbf{Notas} \\
+\hline
+Participantes & 12 & Etiquetados P01 a P12 \\
+\hline
+Sesiones por participante & 3 & Sesiones 01, 02, 03 \\
+\hline
+Fases de medicion por sesion & 3 & M1, M2, M3 \\
+\hline
+Dispositivos simultaneos & 4 & Wearables (ver Cap. 3) \\
+\hline
+Tareas cognitivas & 5 & CRT, N-Back, Task Switch, Fatigue Scale, Markers \\
+\hline
+Variables fisiologicas agregadas & 19 & HR, BR, HRV, EDA, EEG, etc. \\
+\hline
+Reglas de combinacion total & 12 x 3 x 3 & 108 registros en archivo agregado \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Protocolo Experimental y Contrabalanceo}
+
+\subsection{Intensidad de Actividad}
+
+Cada sesion fue disenada para inducir un nivel diferente de fatiga fisica:
+
+\begin{itemize}
+    \item \textbf{Low Intensity}: Actividad fisica ligera (caminar lentamente o
+          ejercicio estatico suave). Induce minimo esfuerzo y fatiga.
+
+    \item \textbf{Medium Intensity}: Actividad fisica moderada (ejercicio cardiovascular
+          moderado). Induce fatiga moderada pero sostenible.
+
+    \item \textbf{High Intensity}: Actividad fisica vigorosa (ejercicio intenso o HIIT-style).
+          Induce fatiga aguda pronunciada.
+\end{itemize}
+
+\subsection{Contrabalanceo de Orden}
+
+Para evitar efectos del orden (aprendizaje, fatiga acumulada entre sesiones),
+los participantes fueron asignados a \textbf{ordenes contrabalanceados} de intensidad.
+Por ejemplo:
+
+\begin{table}[H]
+\centering
+\caption{Ejemplo de contrabalanceo (P01)}
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{Participante} & \textbf{Sesion 1} & \textbf{Sesion 2} & \textbf{Sesion 3} \\
+\hline
+P01 & Low (1) & Medium (2) & High (3) \\
+P02 & Low (1) & High (3) & Medium (2) \\
+P03 & Medium (2) & High (3) & Low (1) \\
+P04 & High (3) & Medium (2) & Low (1) \\
+\vdots & \vdots & \vdots & \vdots \\
+\hline
+\end{tabular}
+\end{table}
+
+Este contrabalanceo de cuadrado latino asegura que no hay confusiones sistematicas
+entre orden de sesion e intensidad de actividad.
+
+\section{Tres Fases de Medicion: M1, M2, M3}
+
+Dentro de cada sesion, el protocolo incluyo \textbf{tres fases temporales} donde
+se recopilaron mediciones de todos los sensores:
+
+\begin{description}
+    \item[M1 - Baseline (Linea Base)]
+    Duracion: ~10 minutos. El participante se encuentra en reposo, se sincroniza
+    la instrumentacion, se recopilan mediciones EEG basales (ojos abiertos y cerrados).
+    Esta fase sirve de comparacion para detectar cambios inducidos por la actividad.
+
+    \item[M2 - Post-Ejercicio]
+    Duracion: ~5-20 minutos (variable segun la intensidad de la actividad previa).
+    Inmediatamente despues de completar la actividad fisica designada. Es la fase
+    donde se observan cambios mas marcados en variables cardiovasculares y electrodermal.
+
+    \item[M3 - Post-Fatiga Mental]
+    Duracion: ~10 minutos. Despues de un bloque de tareas cognitivas (CRT, N-Back, Task Switch).
+    Permite evaluar fatiga mental e interacciones entre fatiga fisica y mental.
+\end{description}
+
+Durante cada fase, los participantes completaron:
+\begin{itemize}
+    \item \textbf{Escala de Fatiga Subjetiva} (exp\_fatigue.csv) - 2 preguntas (fisica y mental)
+    \item \textbf{Tareas Cognitivas} (exp\_crt.csv, exp\_nback.csv, exp\_task\_switch.csv)
+    \item \textbf{Recopilacion de Datos Fisiologicos} - 4 dispositivos simultaneamente
+\end{itemize}
+
+\section{Estructura de Archivos}
+
+El dataset esta organizado jerarquicamente:
+
+\begin{verbatim}
+fatigueset/
+├── metadata.csv                          (Informacion de contrabalanceo)
+├── 01/ 02/ ... 12/                       (Directorios por participante)
+│   ├── 01/ 02/ 03/                       (Subdirectorios por sesion)
+│   │   ├── exp_crt.csv                   (Tarea CRT)
+│   │   ├── exp_nback.csv                 (Tarea N-Back)
+│   │   ├── exp_task_switch.csv           (Tarea Task Switch)
+│   │   ├── exp_fatigue.csv               (Escala de fatiga subjetiva)
+│   │   ├── exp_markers.csv               (Marcadores temporales)
+│   │   ├── ear_acc_left.csv, ...         (Nokia eSense - 6 archivos)
+│   │   ├── forehead_eeg_alpha_abs.csv, ...(Muse S - 13 archivos)
+│   │   ├── chest_physiology_summary.csv, (Zephyr BioHarness - 9 archivos)
+│   │   └── wrist_eda.csv, ...            (Empatica E4 - 6 archivos)
+└── README.md                             (Descripcion tecnica completa)
+
+Total: 34 archivos CSV por sesion
+\end{verbatim}
+
+\section{Dataset Agregado: Caracteristicas Derivadas}
+
+Aunque los archivos crudos contienen miles de registros por sesion (en frecuencias
+que van de 1 Hz a 256 Hz), se proporciona un archivo agregado a nivel de sesion:
+
+\begin{verbatim}
+fatigueset_aggregated_features.csv
+\end{verbatim}
+
+Este archivo contiene \textbf{19 columnas} con estadisticas resumidas (media y desviacion
+estandar) de cada variable fisiologica por registros por fase y sesion:
+
+\begin{table}[H]
+\centering
+\caption{Estructura del archivo agregado (19 columnas)}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Columnas de Identificacion} & \textbf{Autoreportes} & \textbf{Metricas Fisiologicas} \\
+\hline
+participante & fatiga\_fisica & hr\_media, hr\_std \\
+sesion & fatiga\_mental & br\_media, br\_std \\
+intensidad & & hrv\_media, hrv\_std \\
+intensidad\_num & & eda\_media, eda\_std \\
+fase & & eeg\_alpha\_media \\
+fase\_num & & eeg\_beta\_media \\
+& & eeg\_theta\_media \\
+\hline
+\end{tabular}
+\end{table}
+
+\textbf{Forma del dataset agregado}: 108 filas (12 participantes x 3 sesiones x 3 fases)
+
+\section{Resumen Estadistico}
+
+Al limpiar el dataset de valores inf/NaN, disponemos de \textbf{104 registros validos}
+cuando se requieren todas las variables simultaneamente.
+
+\begin{table}[H]
+\centering
+\caption{Estadisticas descriptivas globales}
+\begin{tabular}{|l|l|l|l|}
+\hline
+\textbf{Variable} & \textbf{Media} & \textbf{Desv. Std.} & \textbf{Rango} \\
+\hline
+HR (bpm) & 88.35 & 20.35 & [58.91, 162.28] \\
+BR (brpm) & 20.87 & 4.56 & [11.68, 33.43] \\
+HRV (ms) & 69.23 & 31.18 & [11.28, 189.38] \\
+EDA (µS) & 1.30 & 1.82 & [0.08, 7.68] \\
+EEG Alpha & 0.575 & 0.159 & [0.039, 0.998] \\
+EEG Beta & 0.402 & 0.144 & [0.030, 0.753] \\
+EEG Theta & 0.436 & 0.198 & [0.027, 1.054] \\
+\hline
+\end{tabular}
+\end{table}
+
+Estos rangos y promedios seran interpretados en detalle en los capitulos posteriores.

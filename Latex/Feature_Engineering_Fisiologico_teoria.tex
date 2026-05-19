@@ -1,0 +1,373 @@
+\documentclass[12pt,a4paper,oneside]{report}
+
+\usepackage[spanish]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{hyperref}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue,
+  pdftitle={Fundamentos Teoricos de Feature Engineering Fisiologico},
+  pdfauthor={TFG FatigueSet}
+}
+
+\setlength{\parskip}{0.35em}
+\setlength{\parindent}{0.5cm}
+
+\title{\Huge Fundamentos Teoricos de\\Feature Engineering en Senales Fisiologicas\\[0.6cm]
+\Large Documento Standalone para TFG}
+\author{Proyecto FatigueSet}
+\date{21 de abril de 2026}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\chapter{Introduccion y alcance}
+
+El notebook \textit{Feature\_Engineering\_Fisiologico.ipynb} implementa un flujo completo de analisis sobre un conjunto agregado de variables fisiologicas, incluyendo limpieza, normalizacion, reduccion dimensional, visualizacion no lineal, clustering, importancia de variables y analisis de correlacion. Este documento desarrolla en profundidad el marco teorico de cada bloque metodologico, con formalismo matematico, supuestos, limitaciones y criterios de interpretacion.
+
+Desde el punto de vista de modelado, el problema se puede resumir como sigue: dado un conjunto de muestras $\{\mathbf{x}_i\}_{i=1}^{n}$, con $\mathbf{x}_i \in \mathbb{R}^{p}$ y etiquetas o variables clinicas asociadas, se busca extraer representaciones utiles para (i) describir la estructura latente de los datos, (ii) identificar variables con relevancia predictiva y (iii) construir una narrativa fisiologica coherente sobre fatiga.
+
+En el notebook analizado se trabaja con $n=108$ observaciones y $p=19$ variables agregadas. Aunque el volumen no es grande, el enfoque es representativo de un escenario real de investigacion aplicada en salud digital: pocos sujetos, medicion multimodal y alta necesidad de interpretabilidad.
+
+\chapter{Preparacion de datos y control de calidad}
+
+\section{Modelado de valores faltantes y valores no finitos}
+
+Sea $X \in \mathbb{R}^{n \times p}$ la matriz de datos numericos. Antes de aplicar tecnicas como PCA o K-Means, es necesario garantizar que no existan entradas no finitas.
+
+\begin{itemize}
+\item Valores infinitos ($+\infty$, $-\infty$) pueden surgir por divisiones entre cero o errores de adquisicion.
+\item Valores faltantes ($\mathrm{NaN}$) pueden aparecer por perdida temporal de senal, artefactos o fallos del sensor.
+\end{itemize}
+
+En terminos formales, se define una funcion de saneamiento por componente:
+\[
+\tilde{x}_{ij} =
+\begin{cases}
+\mu_j, & \text{si } x_{ij} \in \{\mathrm{NaN}, +\infty, -\infty\},\\
+x_{ij}, & \text{en otro caso},
+\end{cases}
+\]
+donde $\mu_j$ es la media muestral de la variable $j$ calculada sobre valores observados.
+
+La imputacion por media es una estrategia simple y estable para pipelines exploratorios; sin embargo, reduce la varianza efectiva de la variable imputada y puede sesgar relaciones multivariadas si el mecanismo de faltantes no es MCAR (Missing Completely At Random) \cite{little2019}.
+
+\section{Escalado estandar y comparabilidad entre modalidades}
+
+Las variables fisiologicas suelen estar en escalas heterogeneas: por ejemplo, frecuencia cardiaca en latidos por minuto, EDA en microsiemens y potencias EEG en unidades relativas. Si no se corrige esta heterogeneidad, metodos basados en distancias euclideas quedan dominados por variables de mayor magnitud numerica.
+
+El notebook aplica estandarizacion tipo z-score:
+\[
+z_{ij} = \frac{x_{ij} - \mu_j}{\sigma_j},
+\]
+donde $\mu_j$ y $\sigma_j$ representan media y desviacion tipica muestral de la variable $j$.
+
+Propiedades clave de esta transformacion:
+\begin{itemize}
+\item Centra cada variable en cero y la lleva a varianza aproximada unitaria.
+\item Preserva orden relativo y relaciones lineales, pero no acota valores en un intervalo fijo.
+\item Facilita la interpretacion de cargas en PCA y mejora estabilidad numerica en optimizacion.
+\end{itemize}
+
+Alternativas comunes incluyen Min-Max scaling y Robust scaling. Robust scaling puede ser preferible cuando existen colas pesadas o outliers significativos \cite{hastie2009}.
+
+\section{Riesgo de data leakage en preprocesamiento}
+
+Una fuente clasica de sesgo metodologico es ajustar transformaciones con todo el dataset antes de separar entrenamiento y prueba. Si $\mu_j$ y $\sigma_j$ se estiman usando tambien muestras de test, se introduce informacion futura en el entrenamiento.
+
+En notacion de particion:
+\[
+\mathcal{D} = \mathcal{D}_{\text{train}} \cup \mathcal{D}_{\text{test}}, \quad
+\mathcal{D}_{\text{train}} \cap \mathcal{D}_{\text{test}} = \emptyset.
+\]
+La practica correcta exige:
+\[
+\hat{\mu}_j, \hat{\sigma}_j \leftarrow \mathcal{D}_{\text{train}},
+\]
+y luego transformar ambas particiones con esos parametros fijos.
+
+Este punto no invalida un analisis exploratorio, pero si limita inferencias de generalizacion \cite{kapoor2023}.
+
+\chapter{PCA: reduccion dimensional lineal}
+
+\section{Formulacion algebraica}
+
+PCA busca una base ortonormal $\{\mathbf{w}_k\}_{k=1}^{p}$ que maximize varianza proyectada. Con datos estandarizados $Z$, la matriz de covarianza es:
+\[
+\Sigma = \frac{1}{n-1} Z^\top Z.
+\]
+Se resuelve el problema espectral:
+\[
+\Sigma \mathbf{w}_k = \lambda_k \mathbf{w}_k,
+\]
+con autovalores ordenados $\lambda_1 \geq \lambda_2 \geq \cdots \geq \lambda_p \geq 0$.
+
+La $k$-esima componente principal para muestra $i$ se obtiene como:
+\[
+t_{ik} = \mathbf{z}_i^\top \mathbf{w}_k.
+\]
+
+La fraccion de varianza explicada por componente $k$ es:
+\[
+\mathrm{EVR}_k = \frac{\lambda_k}{\sum_{j=1}^{p} \lambda_j},
+\]
+y la varianza acumulada de las primeras $m$ componentes:
+\[
+\mathrm{CV}(m) = \sum_{k=1}^{m} \mathrm{EVR}_k.
+\]
+
+\section{Criterio del 95\% y lectura del notebook}
+
+El notebook estima el minimo $m$ tal que $\mathrm{CV}(m) \ge 0.95$. En ejecucion reciente, el resultado fue $m=12$, con aproximadamente 28.8\% de varianza en PC1 y 44.8\% en PC1+PC2.
+
+Interpretacion:
+\begin{itemize}
+\item El sistema fisiologico no se resume en dos ejes lineales sin perdida relevante.
+\item Existe redundancia, pero tambien complejidad multimodal: se requieren varias direcciones para capturar dinamica total.
+\item La proyeccion 2D es util para exploracion visual, no para representar exhaustivamente la estructura original.
+\end{itemize}
+
+\section{Cargas, contribuciones y lectura fisiologica}
+
+Las cargas de PCA (elementos de $\mathbf{w}_k$) cuantifican contribucion de cada variable original a cada componente. Una lectura robusta exige:
+\begin{enumerate}
+\item Revisar magnitudes absolutas altas en cada componente.
+\item Contrastar signos para identificar oposicion entre modalidades.
+\item Verificar estabilidad de cargas bajo remuestreo.
+\end{enumerate}
+
+Una limitacion importante es la ambiguedad de signo: si $\mathbf{w}_k$ es solucion, tambien lo es $-\mathbf{w}_k$. Por ello, la interpretacion debe basarse en patron relativo, no en signo absoluto aislado.
+
+\section{Supuestos y limitaciones de PCA}
+
+\begin{itemize}
+\item Relacion lineal: patrones fuertemente no lineales pueden no capturarse bien.
+\item Sensibilidad a outliers: observaciones extremas alteran covarianza.
+\item Enfoque no supervisado: PCA no optimiza discriminacion de una etiqueta concreta.
+\item Interpretabilidad parcial: componentes son combinaciones abstractas, no variables fisiologicas directas.
+\end{itemize}
+
+Fundamentos clasicos de PCA se remontan a Pearson y Hotelling \cite{pearson1901,hotelling1933,jolliffe2002}.
+
+\chapter{t-SNE: visualizacion no lineal de estructura local}
+
+\section{Idea central del metodo}
+
+El algoritmo t-SNE (t-Distributed Stochastic Neighbor Embedding) construye una representacion en baja dimension preservando vecindades locales \cite{maaten2008}. Primero transforma distancias en altas dimensiones en probabilidades de vecindad:
+\[
+p_{j|i} = \frac{\exp\left(-\|\mathbf{x}_i-\mathbf{x}_j\|^2 / 2\sigma_i^2\right)}{\sum_{k \ne i}\exp\left(-\|\mathbf{x}_i-\mathbf{x}_k\|^2 / 2\sigma_i^2\right)}.
+\]
+Luego simetriza:
+\[
+p_{ij} = \frac{p_{j|i} + p_{i|j}}{2n}.
+\]
+
+En el espacio embebido $Y = \{\mathbf{y}_i\}$ usa una distribucion t de Student con un grado de libertad:
+\[
+q_{ij} = \frac{\left(1+\|\mathbf{y}_i-\mathbf{y}_j\|^2\right)^{-1}}{\sum_{k\ne l}\left(1+\|\mathbf{y}_k-\mathbf{y}_l\|^2\right)^{-1}}.
+\]
+
+La optimizacion minimiza divergencia de Kullback-Leibler:
+\[
+\mathrm{KL}(P\|Q) = \sum_{i\ne j} p_{ij} \log\frac{p_{ij}}{q_{ij}}.
+\]
+
+\section{Perplexity y estabilidad}
+
+La perplexity controla el tamano efectivo de vecindad local y se relaciona con la entropia de $p_{j|i}$:
+\[
+\mathrm{Perp}(P_i) = 2^{H(P_i)}.
+\]
+En muestras pequenas, valores moderados (por ejemplo 5--30) suelen evitar sobrefragmentacion visual.
+
+Aunque en el notebook se fija semilla para reproducibilidad, t-SNE sigue siendo sensible a hiperparametros e inicializacion. Por tanto, se recomienda comparar multiples corridas y no inferir estructura clinica solo por una configuracion.
+
+\section{Errores de interpretacion frecuentes}
+
+\begin{itemize}
+\item Distancias globales: t-SNE preserva estructura local, no metrica global.
+\item Tamano aparente de clusters: puede ser artefacto visual del embedding.
+\item Separacion visual no implica separacion estadistica robusta.
+\end{itemize}
+
+Para soporte inferencial, la visualizacion debe combinarse con metricas cuantitativas y validacion externa.
+
+\chapter{Clustering con K-Means y validacion por silhouette}
+
+\section{Funcion objetivo y algoritmo de Lloyd}
+
+K-Means busca particionar $n$ observaciones en $K$ grupos minimizando suma de distancias cuadraticas intra-cluster:
+\[
+\min_{\{C_k\}_{k=1}^{K}} \sum_{k=1}^{K}\sum_{\mathbf{x}_i\in C_k} \|\mathbf{x}_i-\boldsymbol{\mu}_k\|^2,
+\]
+donde $\boldsymbol{\mu}_k$ es el centroide de cluster $k$.
+
+El algoritmo de Lloyd alterna:
+\begin{enumerate}
+\item Asignacion: cada punto al centroide mas cercano.
+\item Actualizacion: recalculo de centroides como media del cluster.
+\end{enumerate}
+
+Con inicializacion k-means++ se mejora convergencia y estabilidad en muchos escenarios \cite{lloyd1982,macqueen1967}.
+
+\section{Seleccion de K con silhouette}
+
+Para cada muestra $i$, se define:
+\[
+a(i)=\text{distancia media a su propio cluster},
+\]
+\[
+b(i)=\min_{k\ne c(i)}\text{distancia media al cluster }k.
+\]
+El coeficiente silhouette individual es:
+\[
+s(i)=\frac{b(i)-a(i)}{\max\{a(i),b(i)\}} \in [-1,1].
+\]
+El indice global es el promedio de $s(i)$.
+
+En el notebook, el mejor valor observado fue $K=2$ con silhouette aproximado de 0.407. Esto sugiere estructura moderada: hay separacion util, pero no fuertemente definida.
+
+\section{Interpretacion fisiologica prudente}
+
+Encontrar dos clusters no implica automaticamente dos estados clinicos puros. Pueden reflejar combinaciones de intensidad, fase experimental, diferencias inter-sujeto o factores no controlados. Se recomienda perfilar clusters con estadistica descriptiva por variable y metadatos de protocolo antes de asignar significado causal.
+
+\chapter{Random Forest e importancia de variables}
+
+\section{Fundamentos del modelo}
+
+Random Forest combina multiples arboles entrenados sobre remuestreo bootstrap y submuestreo aleatorio de variables por nodo \cite{breiman2001}. Para regresion, la prediccion final es promedio:
+\[
+\hat{f}(\mathbf{x}) = \frac{1}{T}\sum_{t=1}^{T} f_t(\mathbf{x}),
+\]
+donde $T$ es numero de arboles.
+
+Ventajas relevantes:
+\begin{itemize}
+\item Capta no linealidades e interacciones sin especificacion explicita.
+\item Alta robustez frente a ruido moderado.
+\item Permite extraer medidas de importancia de variables.
+\end{itemize}
+
+\section{Importancia por disminucion de impureza}
+
+La importancia por MDI (Mean Decrease in Impurity) acumula reducciones de impureza generadas por una variable a traves de todos los arboles. Si una variable participa en divisiones que reducen fuertemente el error cuadratico, su importancia aumenta.
+
+Formalmente, para variable $j$:
+\[
+\mathrm{Imp}(j) = \frac{1}{T}\sum_{t=1}^{T}\sum_{v \in \mathcal{V}_{t,j}} \Delta I(v),
+\]
+donde $\mathcal{V}_{t,j}$ son nodos del arbol $t$ que dividen con variable $j$, y $\Delta I(v)$ la reduccion de impureza en ese nodo.
+
+\section{Rendimiento y leakage}
+
+En una iteracion previa del notebook se observo un $R^2$ casi perfecto por incluir accidentalmente la variable objetivo entre predictores. Tras corregir ese leakage, el valor se situo alrededor de $R^2=0.916$, mas plausible para un ajuste in-sample.
+
+Este caso ilustra un principio central: importancia y desempeno deben interpretarse solo tras verificar que no existe fuga de informacion. Adicionalmente, un buen ajuste sobre entrenamiento no garantiza generalizacion.
+
+\section{Limitaciones de importancia en Random Forest}
+
+\begin{itemize}
+\item Sesgo potencial hacia variables con mayor variabilidad o cardinalidad.
+\item Sensibilidad a multicolinealidad: dos variables correlacionadas pueden repartirse importancia.
+\item No implica causalidad fisiologica.
+\end{itemize}
+
+Por ello, se recomienda complementar con permutation importance y metodos basados en Shapley values en trabajos futuros \cite{fisher2019,lundberg2017}.
+
+\chapter{Correlacion lineal y estructura bivariada}
+
+\section{Coeficiente de Pearson}
+
+El coeficiente de correlacion lineal de Pearson entre variables $X$ y $Y$ se define como:
+\[
+r_{XY} = \frac{\sum_{i=1}^{n}(x_i-\bar{x})(y_i-\bar{y})}{\sqrt{\sum_{i=1}^{n}(x_i-\bar{x})^2}\sqrt{\sum_{i=1}^{n}(y_i-\bar{y})^2}}.
+\]
+Sus valores estan en $[-1,1]$ y miden asociacion lineal.
+
+En el notebook se visualiza una submatriz de variables de mayor varianza para mejorar legibilidad del heatmap. Esta eleccion es practica para exploracion, aunque no sustituye pruebas de significacion ni analisis de correlacion parcial.
+
+\section{Lectura correcta del heatmap}
+
+\begin{itemize}
+\item Correlacion alta no implica relacion causal.
+\item Relaciones no lineales pueden pasar desapercibidas con Pearson.
+\item En presencia de variables confusoras, las correlaciones bivariadas pueden inducir interpretaciones erroneas.
+\end{itemize}
+
+Una ruta mas robusta incluye modelos multivariados y analisis estratificado por sujeto, sesion o intensidad.
+
+\chapter{Reproducibilidad, validez y buenas practicas}
+
+\section{Semillas y estabilidad computacional}
+
+El flujo fija semillas aleatorias para reproducibilidad. Esta practica mejora trazabilidad, pero no elimina toda variabilidad en metodos como t-SNE, donde pequenas perturbaciones pueden cambiar geometria visual final.
+
+\section{Validacion estadistica recomendada}
+
+Para transicionar de EDA a evidencia predictiva, se recomienda:
+\begin{enumerate}
+\item Separacion entrenamiento-prueba por sujeto para evitar contaminacion temporal.
+\item Validacion cruzada estratificada segun estructura experimental.
+\item Reporte de intervalos de confianza via bootstrap.
+\item Analisis de sensibilidad a hiperparametros.
+\end{enumerate}
+
+\section{Tamano muestral y complejidad del modelo}
+
+Con $n=108$, el margen para modelos complejos es limitado. Un principio util es controlar relacion muestra/parametros efectivos para evitar sobreajuste. La combinacion de reduccion dimensional, regularizacion implicita y validacion rigurosa es preferible a aumentar complejidad sin control.
+
+\chapter{Sintesis teorica por bloque del notebook}
+
+\section{Resumen integrador}
+
+\begin{table}[H]
+\centering
+\caption{Bloques del notebook y su significado teorico principal}
+\begin{tabular}{p{3.1cm}p{5.6cm}p{4.7cm}}
+\toprule
+Bloque & Marco teorico & Riesgo principal \\
+\midrule
+Limpieza e imputacion & Calidad de datos, inferencia bajo faltantes & Sesgo por mecanismo de missingness \\
+Estandarizacion & Comparabilidad de escala en metodos metricos & Leakage si se ajusta con test \\
+PCA & Proyeccion lineal de maxima varianza & Perdida de estructura no lineal \\
+t-SNE & Preservacion de vecindad local en embedding & Sobreinterpretacion visual global \\
+K-Means + silhouette & Segmentacion no supervisada y cohesion/separacion & Asuncion de clusters esfericos \\
+Random Forest importance & Relevancia predictiva no lineal & Importancia no causal, colinealidad \\
+Correlacion & Dependencia lineal bivariada & Confusion y no causalidad \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+El valor del pipeline no reside en una unica tecnica aislada, sino en la triangulacion entre metodos: PCA resume, t-SNE explora, K-Means segmenta, Random Forest prioriza variables y la correlacion ayuda a interpretar acoplamientos.
+
+\chapter{Conclusiones y extensiones futuras}
+
+Este desarrollo teorico muestra que el notebook implementa un pipeline coherente para exploracion avanzada de senales fisiologicas agregadas. Su mayor fortaleza es la combinacion de metodos complementarios con decisiones de preprocesamiento explicitadas.
+
+Para elevar el nivel metodologico a estandar de publicacion, las extensiones prioritarias son:
+\begin{itemize}
+\item Validacion fuera de muestra con diseno por sujeto.
+\item Comparativas sistematicas (UMAP vs t-SNE, GMM/DBSCAN vs K-Means).
+\item Importancia robusta (permutation y SHAP).
+\item Integracion de incertidumbre estadistica en todos los reportes.
+\end{itemize}
+
+En conjunto, el marco teorico aqui presentado sirve como base formal para justificar decisiones del feature engineering y para defender su interpretacion en un TFG de orientacion cientifica.
+
+\bibliographystyle{plain}
+\bibliography{feature_engineering_refs}
+
+\end{document}

@@ -1,0 +1,341 @@
+\chapter{Dispositivos y Sensores Fisiologicos}
+\label{cap:sensors}
+
+\section{Vision General}
+
+El dataset FatigueSet recopilo datos simultaneamente de \textbf{4 dispositivos wearables}
+diferentes, cada uno specializado en diferentes tipos de senales fisiologicas.
+Esto permite un enfoque verdaderamente multimodal donde se capturan perspectivas
+complementarias de la fatiga.
+
+\begin{table}[H]
+\centering
+\caption{Resumen de los 4 dispositivos wearables}
+\begin{tabular}{|l|l|l|l|l|}
+\hline
+\textbf{Dispositivo} & \textbf{Ubicacion} & \textbf{Frecuencia} & \textbf{Senales Clave} & \textbf{Archivos} \\
+\hline
+Nokia eSense & Orejas & 100 Hz & Aceleracion, Giroscopio, PPG & 6 CSV \\
+\hline
+Muse S & Frente & 256 Hz raw & EEG, Blinks, Jaw clenches & 13 CSV \\
+\hline
+Zephyr BioHarness & Pecho & 250 Hz & ECG, HR, BR, HRV, Aceleracion & 9 CSV \\
+\hline
+Empatica E4 & Muñeca & 64 Hz & BVP, EDA, HR, Temperatura & 6 CSV \\
+\hline
+\end{tabular}
+\end{table}
+
+Las siguientes secciones describen cada dispositivo en detalle.
+
+\section{Nokia Bell Labs eSense (Earable)}
+
+\subsection{Ubicacion y Especificaciones}
+
+El Nokia eSense es un dispositivo pequeño que se coloca en la oreja (earable).
+Aunque compacto, integra multiples sensores que capturan aceleracion, rotacion
+y senal optica (fotopletismograma).
+
+\begin{table}[H]
+\centering
+\caption{Nokia eSense - Especificaciones tecnicas}
+\begin{tabular}{|p{3.5cm}|p{4cm}|p{3cm}|}
+\hline
+\textbf{Caracteristica} & \textbf{Descripcion} & \textbf{Especificacion} \\
+\hline
+Ubicacion & Oido (uno en cada oreja) & Bilateral \\
+\hline
+Acelerometro & Movimiento lineal 3-eje & 100 Hz, rango +/-2g \\
+\hline
+Giroscopo & Velocidad angular 3-eje & 100 Hz, rango +/-500 deg/s \\
+\hline
+PPG/Fotopletismograma & Senal optica del flujo sanguineo & 100 Hz, canales verde/IR/rojo \\
+\hline
+Almacenamiento & Datos en memoria local & Hasta 64 GB \\
+\hline
+Peso & Marginal (< 5 gramos) & Confortable para uso prolongado \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Archivos de Datos}
+
+Hay 6 archivos CSV por sesion (uno por cada sensor en ambas orejas):
+
+\begin{itemize}
+    \item \textbf{ear\_acc\_left.csv} - Acelerometro oreja izquierda (columnas: timestamp, ax, ay, az)
+    \item \textbf{ear\_acc\_right.csv} - Acelerometro oreja derecha
+    \item \textbf{ear\_gyro\_left.csv} - Giroscopo oreja izquierda (columnas: timestamp, gx, gy, gz)
+    \item \textbf{ear\_gyro\_right.csv} - Giroscopo oreja derecha
+    \item \textbf{ear\_ppg\_left.csv} - Fotopletismograma oreja izquierda (columnas: timestamp, green, ir, red)
+    \item \textbf{ear\_ppg\_right.csv} - Fotopletismograma oreja derecha
+\end{itemize}
+
+\subsection{Interpretacion: Movimiento y Flujo Sanguineo}
+
+La aceleracion y el giroscopo detectan movimientos de cabeza y movimiento general,
+utiles como indicadores indirectos de actividad y vigilancia.
+
+El PPG (fotopletismograma) mide cambios en la transmision de luz a traves del
+tejido, reflejo de cambios en el volumen sanguineo en los capilares del oida.
+De este se puede extraer:
+\begin{itemize}
+    \item \textbf{Frecuencia cardiaca} (contando picos del PPG)
+    \item \textbf{Variabilidad cardiaca} (variaciones en intervalos entre latidos)
+    \item \textbf{Oxigenacion de tejido} (usando multiples longitudes de onda)
+\end{itemize}
+
+\section{Muse S Headband (EEG)}
+
+\subsection{Ubicacion y Especificaciones}
+
+Muse S es una diadema EEG de consumidor que se coloca sobre la frente y las
+sienes. Registra electroencefalograma bruto junto con bandas de potencia procesadas.
+
+\begin{table}[H]
+\centering
+\caption{Muse S - Especificaciones tecnicas principales}
+\begin{tabular}{|p{3.5cm}|p{4cm}|p{3cm}|}
+\hline
+\textbf{Caracteristica} & \textbf{Descripcion} & \textbf{Especificacion} \\
+\hline
+Ubicacion & Frente y sienes bilaterales & 4 canales EEG \\
+\hline
+Canales EEG & TP9, AF7, AF8, TP10 & Colocacion 10/20 modificada \\
+\hline
+EEG Crudo & Muestreo de amplitud instantanea & 256 Hz, rango 0-1682.8 µV \\
+\hline
+Bandas de Potencia & Potencia en 5 bandas de frecuencia & 10 Hz (agregadas) \\
+\hline
+Bandas incluidas & Delta, Theta, Alpha, Beta, Gamma & Automaticamente procesadas \\
+\hline
+Acelerometro & Movimiento 3-eje durante registro & 52 Hz \\
+\hline
+Giroscopo & Velocidad angular durante movimiento & 52 Hz \\
+\hline
+Detecciones Secundarias & Parpadeos y apretamiento mandibular & Evento (no continuo) \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Archivos de Datos EEG}
+
+Hay 13 archivos CSV por sesion:
+
+\begin{enumerate}
+    \item \textbf{forehead\_eeg\_raw.csv} - EEG crudo en 256 Hz (columnas: timestamp, TP9, AF7, AF8, TP10)
+    \item \textbf{forehead\_eeg\_alpha\_abs.csv} - Potencia banda Alpha en Bels (10 Hz)
+    \item \textbf{forehead\_eeg\_beta\_abs.csv} - Potencia banda Beta en Bels (10 Hz)
+    \item \textbf{forehead\_eeg\_delta\_abs.csv} - Potencia banda Delta en Bels (10 Hz)
+    \item \textbf{forehead\_eeg\_gamma\_abs.csv} - Potencia banda Gamma en Bels (10 Hz)
+    \item \textbf{forehead\_eeg\_theta\_abs.csv} - Potencia banda Theta en Bels (10 Hz)
+    \item \textbf{forehead\_acc.csv} - Acelerometro (timestamp, ax, ay, az; 52 Hz)
+    \item \textbf{forehead\_gyro.csv} - Giroscopo (timestamp, gx, gy, gz; 52 Hz)
+    \item \textbf{muse\_blinks.csv} - Deteccion de parpadeos (timestamp, is\_blink)
+    \item \textbf{muse\_jaw\_clenches.csv} - Deteccion apretamiento mandibular (is\_clench)
+    \item \textbf{muse\_device\_battery.csv} - Nivel de bateria y temperatura
+    \item \textbf{muse\_device\_fit.csv} - Calidad de contacto electrodo (1=Bueno, 2=Medio, 4=Malo)
+    \item \textbf{muse\_device\_touch.csv} - Deteccion de contacto con frente
+\end{enumerate}
+
+\subsection{Interpretacion: Bandas de Frecuencia EEG}
+
+EEG mide actividad electrica generalizada del cerebro. Se divide en bandas de
+frecuencia, cada una asociada con diferentes estados mentales:
+
+\begin{table}[H]
+\centering
+\caption{Bandas de frecuencia EEG y sus interpretaciones}
+\begin{tabular}{|l|l|l|l|l|}
+\hline
+\textbf{Banda} & \textbf{Rango} & \textbf{Potencia Alta} & \textbf{Potencia Baja} \\
+\hline
+\textbf{Delta} & 0.5-4 Hz & Sueño profundo & Vigilia alerta \\
+\hline
+\textbf{Theta} & 4-8 Hz & Somnolencia, meditacion & Despertalerta \\
+\hline
+\textbf{Alpha} & 8-12 Hz & Relajacion, ojos cerrados & Concentracion activa \\
+\hline
+\textbf{Beta} & 12-30 Hz & Actividad mental, alerta & Relajacion \\
+\hline
+\textbf{Gamma} & 30-100 Hz & Procesamiento cognitivo intenso & Estado basal \\
+\hline
+\end{tabular}
+\end{table}
+
+Para \textbf{deteccion de fatiga}, las bandas mas relevantes son:
+\begin{itemize}
+    \item \textbf{Alpha aumentado} - Puede indicar relajacion excesiva o somnolencia
+    \item \textbf{Theta aumentado} - Fuerte indicador de somnolencia/cansancio
+    \item \textbf{Beta disminuido} - Sugiere fatiga mental o falta de alerta
+\end{itemize}
+
+\section{Zephyr BioHarness 3.0 (Pecho/Cardiopulmonar)}
+
+\subsection{Ubicacion y Especificaciones}
+
+BioHarness es un chaleco que se viste sobre el pecho, especializado en mediciones
+cardiovasculares y respiratorias. Es el dispositivo mas orientado a datos cardiopulmonares
+de alta fidelidad.
+
+\begin{table}[H]
+\centering
+\caption{Zephyr BioHarness - Especificaciones tecnicas}
+\begin{tabular}{|p{3.5cm}|p{4cm}|p{3cm}|}
+\hline
+\textbf{Caracteristica} & \textbf{Descripcion} & \textbf{Especificacion} \\
+\hline
+Ubicacion & Pecho (tipo bandeja) & Mediciones directas cardiopulmonares \\
+\hline
+ECG Crudo & Electrocardiograma sin filtrar & 250 Hz, resolucion 12-bit \\
+\hline
+Frecuencia Cardiaca & Cardio ritmo detectado & 1 Hz, rango 25-240 bpm \\
+\hline
+Variabilidad Cardiaca & SDNN de ultimos latidos & 1 Hz, rango 0-65534 ms \\
+\hline
+Frecuencia Respiratoria & Senal respiratoria & 1 Hz, rango 4-70 brpm \\
+\hline
+Acelerometro & Movimiento corporal 3-eje & 100 Hz, 12-bit \\
+\hline
+Resolucion de Postura & Angulo desde vertical & Incluido en resumen \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Archivos de Datos}
+
+Hay 9 archivos CSV por sesion:
+
+\begin{small}
+\begin{itemize}
+    \item \textbf{chest\_physiology\_summary.csv} - Resumenes de HR, BR, HRV, postura (1 Hz)
+    \item \textbf{chest\_raw\_ecg.csv} - ECG crudo (250 Hz)
+    \item \textbf{chest\_raw\_acc.csv} - Acelerometro sin filtrar (100 Hz)
+    \item \textbf{chest\_raw\_breathing.csv} - Senal respiratoria cruda (25 Hz)
+    \item \textbf{chest\_rr\_interval.csv} - Intervalos R-R (entre latidos QRS)
+    \item \textbf{chest\_bb\_interval.csv} - Intervalos entre eventos respiratorios
+    \item \textbf{chest\_sensor\_summary.csv} - Estadisticas de aceleracion, ECG (1 Hz)
+    \item \textbf{zephyr\_activity\_summary.csv} - Conteos de pasos, saltos, impactos (1 Hz)
+    \item \textbf{zephyr\_device\_status.csv} - Bateria, conexion, confianza de uso (1 Hz)
+\end{itemize}
+\end{small}
+
+\subsection{Interpretacion: Cardiorespiratoria}
+
+El BioHarness proporciona las mediciones mas directas de carga cardiovascular:
+
+\begin{itemize}
+    \item \textbf{Frecuencia Cardiaca (HR)} - Indicador basico de activacion. Aumenta con
+          ejercicio y estrés, puede disminuir en fatiga severa.
+
+    \item \textbf{Variabilidad Cardiaca (HRV)} - Refleja balance del sistema nervioso autonomo.
+          HRV  \textbf{baja} = dominancia simpatica = estres/fatiga. HRV \textbf{alta} = mejor
+          regulacion parasimpatica = recuperacion.
+
+    \item \textbf{Frecuencia Respiratoria (BR)} - Aumenta con esfuerzo. Respiracion
+          rapida = estrés o ejercicio intenso.
+\end{itemize}
+
+Estas tres metricas forman la triada cardiorespiratoria fundamental para evaluar fatiga.
+
+\section{Empatica E4 (Muñeca)}
+
+\subsection{Ubicacion y Especificaciones}
+
+E4 es una pulsera que se lleva como reloj. Proporciona mediciones de volumen
+sanguineo, actividad electrodermal, frequencia cardiaca y temperatura de piel.
+
+\begin{table}[H]
+\centering
+\caption{Empatica E4 - Especificaciones tecnicas}
+\begin{tabular}{|p{3.5cm}|p{4cm}|p{3cm}|}
+\hline
+\textbf{Caracteristica} & \textbf{Descripcion} & \textbf{Especificacion} \\
+\hline
+Ubicacion & Muñeca (como reloj) & Sensores PPG + electrodo sudor \\
+\hline
+BVP (Volumen Pulso Sangr.) & Fotopletismograma PPG & 64 Hz \\
+\hline
+EDA (Actividad Electrodermal) & Conductancia de piel & 4 Hz, rango 0-100 µS \\
+\hline
+HR de E4 & Frecuencia cardiaca derivada & 1 Hz \\
+\hline
+IBI (Inter-Beat Interval) & Intervalo entre latidos & Variable (evento) \\
+\hline
+Temperatura Piel & Sensor termico en posterior & 4 Hz \\
+\hline
+Acelerometro & Movimiento de muñeca & 32 Hz \\
+\hline
+Bateria & Duracion aprovechable & ~24 horas con uso tipico \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Archivos de Datos}
+
+Hay 6 archivos CSV por sesion:
+
+\begin{itemize}
+    \item \textbf{wrist\_bvp.csv} - Volumen pulso sanguineo (64 Hz)
+    \item \textbf{wrist\_eda.csv} - Actividad electrodermal en microsiemens (4 Hz)
+    \item \textbf{wrist\_hr.csv} - Frecuencia cardiaca derivada (1 Hz)
+    \item \textbf{wrist\_ibi.csv} - Intervalo entre latidos (variable)
+    \item \textbf{wrist\_acc.csv} - Acelerometro (32 Hz, 3-eje)
+    \item \textbf{wrist\_skin\_temperature.csv} - Temperatura cutanea (4 Hz)
+\end{itemize}
+
+\subsection{Interpretacion: Estado Simpatico}
+
+E4 es especialista en senales del sistema nervioso simpatico:
+
+\begin{itemize}
+    \item \textbf{EDA (Actividad Electrodermal)} - Medida directa de conductancia de piel,
+          reflejo de arousale/activacion. EDA baja (~0.5 µS) = estado basal. EDA alta
+          (>2 µS) = estrés/atencion/emocion.
+
+    \item \textbf{BVP (Volumen Pulso)} - Cambios dinamicos en volumen sanguineo periférico.
+          Util para detectar respuestas vasoconstructoras a estrés.
+
+    \item \textbf{Temperatura de Piel} - Disminuye con vasoconstriccion (estrés), aumenta
+          con vasodilatacion (relajacion).
+\end{itemize}
+
+\section{Complementariedad de los 4 Dispositivos}
+
+La verdadera fuerza del FatigueSet es la complementariedad de estos dispositivos:
+
+\begin{table}[H]
+\centering
+\caption{Que sistemas corporales mide cada dispositivo}
+\begin{tabular}{|l|l|l|l|l|}
+\hline
+\textbf{Sistema} & \textbf{eSense} & \textbf{Muse S} & \textbf{BioHarness} & \textbf{E4} \\
+\hline
+Actividad Cerebral & - & XX & - & - \\
+\hline
+Cardiovascular & X & - & XX & XX \\
+\hline
+Respiratorio & - & - & XX & - \\
+\hline
+Electrodermal (SNA) & - & - & - & XX \\
+\hline
+Movimiento/Aceleracion & XX & XX & XX & X \\
+\hline
+Flujo Sanguineo (PPG) & X & - & - & XXX \\
+\hline
+\end{tabular}
+\end{table}
+
+Donde X = medicion parcial, XX = medicion completa, XXX = medicion especializada.
+
+Con estos 4 dispositivos es posible capturar simultaneamente:
+\begin{enumerate}
+    \item Estado del SNC (Sistema Nervioso Central) con EEG (Muse)
+    \item Estado del SNA simpatico con EDA y BVP (E4)
+    \item Respuesta cardiovascular (HR, HRV) con multiples dispositivos
+    \item Respuesta respiratoria (BR) con BioHarness
+    \item Movimiento global y actividad (acelerometros en todos)
+\end{enumerate}
+
+Esta multiplicidad es puente esencial para validar mediciones y entender metricas
+como fatiga que son multimodales.

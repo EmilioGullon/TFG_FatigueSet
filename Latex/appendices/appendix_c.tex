@@ -1,0 +1,41 @@
+\section*{Apendice C: Codigo Python de Ejemplo para Carga y Analisis}
+
+\begin{lstlisting}[language=Python, caption={Carga basica de datos}]
+import pandas as pd
+import numpy as np
+
+# Cargar dataset agregado
+df = pd.read_csv('fatigueset_aggregated_features.csv')
+
+# Limpiar
+df = df.replace([np.inf, -np.inf], np.nan)
+df_clean = df.dropna()
+
+# Estadisticas basicas
+print(df_clean.describe())
+\end{lstlisting}
+
+\begin{lstlisting}[language=Python, caption={Comparar variables entre fases}]
+# Analizar cambios entre M1, M2, M3
+for fase in df_clean['fase'].unique():
+    fase_data = df_clean[df_clean['fase'] == fase]
+    print(f"\n{fase}:")
+    print(f"  HR: {fase_data['hr_media'].mean():.1f} +/- {fase_data['hr_media'].std():.1f}")
+    print(f"  HRV: {fase_data['hrv_media'].mean():.1f} +/- {fase_data['hrv_media'].std():.1f}")
+    print(f"  EDA: {fase_data['eda_media'].mean():.3f} +/- {fase_data['eda_media'].std():.3f}")
+\end{lstlisting}
+
+\begin{lstlisting}[language=Python, caption={Graficos con Matplotlib/Seaborn}]
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Box plot
+sns.boxplot(data=df_clean, x='fase', y='hr_media', hue='intensidad')
+plt.title('HR por Fase e Intensidad')
+plt.show()
+
+# Violin plot por participante
+sns.violinplot(data=df_clean, x='participante', y='hrv_media')
+plt.title('Variabilidad en HRV por Participante')
+plt.show()
+\end{lstlisting}

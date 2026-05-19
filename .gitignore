@@ -1,0 +1,27 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Datos crudos y salidas generadas
+/fatigueset/
+/fatigueset_aggregated_features.csv
+/resultados_modelos.csv
+/scripts_visualizacion/fatigueset_aggregated_features_clean.csv
+/Jupyters/1.Preprocesado/fatigueset_aggregated_features.csv
+
+# Artefactos de LaTeX
+*.aux
+*.bbl
+*.blg
+*.lof
+*.log
+*.lot
+*.out
+*.toc
+
+# Archivos temporales comunes
+*.swp
+*.swo
+Thumbs.db
+.DS_Store

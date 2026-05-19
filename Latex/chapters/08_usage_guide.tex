@@ -1,0 +1,164 @@
+\chapter{Guia Practica: Como Utilizar el Dataset}
+\label{cap:usage_guide}
+
+\section{Acceso al Dataset}
+
+El dataset FatigueSet esta disponible en:
+\url{https://www.esense.io/datasets/fatigueset}
+
+Descargue el archivo completo comprimido (~500 MB aproximadamente).
+
+\section{Estructura de Directorios Despues de Descargar}
+
+\begin{verbatim}
+fatigueset/
+├── README.md              (Especificaciones - LEA PRIMERO)
+├── metadata.csv           (Contrabalanceo de participantes)
+├── 01/ ... 12/            (Directorios de participantes)
+│   ├── 01/ 02/ 03/        (Sesiones 1, 2, 3)
+│   │   ├── exp_crt.csv
+│   │   ├── exp_nback.csv
+│   │   ├── exp_task_switch.csv
+│   │   ├── exp_fatigue.csv
+│   │   ├── exp_markers.csv
+│   │   ├── ear_*.csv (6 archivos)
+│   │   ├── forehead_*.csv (13 archivos)
+│   │   ├── chest_*.csv (9 archivos)
+│   │   └── wrist_*.csv (6 archivos)
+└── fatigueset_aggregated_features.csv  (ARCHIVO PRINCIPAL PARA ANALISIS)
+\end{verbatim}
+
+\section{Archivo Principal para Analisis: fatigueset\_aggregated\_features.csv}
+
+Para 95\% de los analisis, use este archivo en lugar de los 34 CSV crudos por sesion.
+
+\subsection{Como Cargar en Python}
+
+\begin{lstlisting}[language=Python]
+import pandas as pd
+import numpy as np
+
+# Cargar datos
+df = pd.read_csv('fatigueset_aggregated_features.csv')
+
+# Inspeccionar
+print(f"Forma: {df.shape}")  # 108 filas, 19 columnas
+print(df.head())
+print(df.describe())
+
+# Limpiar valores problematicos
+df_clean = df.replace([np.inf, -np.inf], np.nan)
+df_clean = df_clean.dropna()
+print(f"Registros validos: {len(df_clean)}")
+\end{lstlisting}
+
+\section{Tareas Comunes}
+
+\subsection{1. Comparar Variables entre Fases}
+
+\begin{lstlisting}[language=Python]
+# Agrupar por fase
+for fase in ['M1_baseline', 'M2_post_ejercicio', 'M3_post_fatiga_mental']:
+    fase_data = df_clean[df_clean['fase'] == fase]
+    print(f"\n{fase}:")
+    print(f"  HR: {fase_data['hr_media'].mean():.1f} bpm")
+    print(f"  HRV: {fase_data['hrv_media'].mean():.1f} ms")
+    print(f"  EDA: {fase_data['eda_media'].mean():.2f} uS")
+\end{lstlisting}
+
+\subsection{2. Analizar Efecto de Intensidad}
+
+\begin{lstlisting}[language=Python]
+# Comparar low vs medium vs high
+for intensidad in ['low', 'medium', 'high']:
+    int_data = df_clean[df_clean['intensidad'] == intensidad]
+    print(f"\n{intensidad.upper()}:")
+    print(f"  HR promedio: {int_data['hr_media'].mean():.1f}")
+    print(f"  HRV promedio: {int_data['hrv_media'].mean():.1f}")
+    print(f"  Fatiga Fisica reportada: {int_data['fatiga_fisica'].mean():.1f}/100")
+\end{lstlisting}
+
+\subsection{3. Visualizaciones Basicas}
+
+\begin{lstlisting}[language=Python]
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Box plot de HR por fase
+sns.boxplot(data=df_clean, x='fase', y='hr_media')
+plt.title('Frecuencia Cardiaca por Fase')
+plt.show()
+
+# Scatter plot: HRV vs Autoreporte Fatiga
+plt.scatter(df_clean['hrv_media'], df_clean['fatiga_fisica'], alpha=0.6)
+plt.xlabel('HRV (ms)')
+plt.ylabel('Fatiga Fisica Reportada')
+plt.title('Relacion HRV vs Autoreporte Fatiga')
+plt.show()
+\end{lstlisting}
+
+\section{Notas Importantes}
+
+\subsection{Valores Problematicos}
+
+El dataset puede contener:
+\begin{itemize}
+    \item \textbf{-inf, inf, NaN}: Generalmente participante 12, algunas fases.
+          Solucion: usar `dropna()` o `replace([np.inf, -np.inf], np.nan)`
+    \item \textbf{Valores atipicos}: Algunos participantes pueden tener respuestas extremas.
+          Normalice por participante si es necesario.
+\end{itemize}
+
+\subsection{Unidades y Escalas}
+
+\begin{table}[H]
+\centering
+\caption{Unidades para cada variable}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Variable} & \textbf{Unidad} & \textbf{Rango Tipico} \\
+\hline
+hr\_media & bpm & 60-120 \\
+br\_media & brpm & 12-30 \\
+hrv\_media & ms & 20-100 \\
+eda\_media & µS & 0.1-3 \\
+eeg\_*\_media & Bels & 0-1 \\
+fatiga\_fisica, fatiga\_mental & escala 0-100 & 0-100 \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Contexto Temporal}
+
+Este es un dataset de \textbf{laboratorio controlado}. No es datos "salvajes" de personas
+en vida real. Protocolos:
+\begin{itemize}
+    \item Actividad fisica controlada (no sabemos exactamente que nivel de ejercicio)
+    \item Tareas cognitivas estandarizadas
+    \item Ambiente controlado (sin distracciones externas)
+\end{itemize}
+
+Generalizacion a escenarios reales requiere caucion.
+
+\section{Proximos Pasos Sugeridos}
+
+Para investigadores interesados en este dataset:
+
+\begin{enumerate}
+    \item \textbf{Validar resultados}: Reproduzca los analisis mostrados en Cap. 6
+    \item \textbf{Analisis avanzado}: Modelos ML para prediccion de fatiga
+    \item \textbf{Individualizacion}: Desarrolle modelos personalizados por sujeto
+    \item \textbf{Series temporales}: Analice dinamica temporal dentro de sesiones
+    \item \textbf{Comparaciones}: Compare contra otros datasets de fatiga si disponibles
+\end{enumerate}
+
+\section{Contacto y Referencia}
+
+\textbf{Para problemas con el dataset}:
+Consulte el archivo README.md en la raiz del directorio.
+
+\textbf{Para citar este dataset}:
+Utilice la referencia bibliografica de Kalanadhabhatta et al. (2021) en References.
+
+\textbf{Para reportar errores/bug}s:
+Contacte a los autores a traves del sitio web de eSense.
