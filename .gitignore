@@ -25,3 +25,16 @@ __pycache__/
 *.swo
 Thumbs.db
 .DS_Store
+
+# Outputs generados por experiments/
+/output/
+# Ignorar artefactos binarios y figuras generadas
+*.pkl
+*.npz
+*.h5
+*.ckpt
+*.log
+*.png
+
+# Jupyter
+.ipynb_checkpoints/
