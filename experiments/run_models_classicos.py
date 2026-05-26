@@ -109,7 +109,8 @@ def run(args):
             }).sort_values('importance', ascending=False)
             importancias.to_csv(out_dir / 'feature_importances.csv', index=False)
 
-    print(f"✓ Resultados guardados en: {out_dir}")
+    # Evitar caracteres no soportados por algunas consolas Windows
+    print(f"Resultados guardados en: {out_dir}")
 
 
 def cli():

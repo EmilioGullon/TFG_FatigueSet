@@ -54,8 +54,13 @@ class DataLoader:
         Por defecto el directorio de trabajo actual.
     """
 
-    def __init__(self, base_path: str | Path = '.'):
-        self.base_path = Path(base_path)
+    def __init__(self, base_path: str | Path | None = None):
+        # Por defecto, resolver rutas relativas desde la raíz del paquete
+        # fatigueset-lib (útil para los tests que pasan 'data/sample/...').
+        if base_path is None:
+            self.base_path = Path(__file__).resolve().parent.parent
+        else:
+            self.base_path = Path(base_path)
 
     def load_csv(self, path: str | Path) -> pd.DataFrame:
         """

@@ -1,0 +1,228 @@
+% Documento LaTeX: experimentos de modelos clásicos
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{caption}
+\usepackage{longtable}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{geometry}
+\geometry{margin=1in}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  backgroundcolor=\color{gray!5},
+  postbreak=\\, % show backslash at line breaks
+}
+
+\title{Experimentos: Modelos clásicos para predicción de fatiga física}
+\author{Proyecto FatigueSet}
+\date{26 de mayo de 2026}
+
+\begin{document}
+\sloppy
+\maketitle
+
+\begin{abstract}
+Este documento resume los experimentos realizados con modelos clásicos de regresión para la predicción de la variable \textit{fatiga\_fisica}. Se describen los datos, la metodología, la formulación breve de cada modelo, los resultados empíricos (tablas y figuras generadas por los scripts) y una comparación estadística entre los mejores modelos.
+\end{abstract}
+
+\section{Datos}
+Los experimentos se ejecutaron sobre un subconjunto de features contenido en \verb|fatigueset-lib/data/sample/sample_df.csv|. Se utilizó como target la columna \texttt{fatiga\_fisica}. Las columnas de identidad (participante, sesión, intensidad, fase) fueron excluidas antes del entrenamiento. Las variables no numéricas se descartaron y los valores faltantes se rellenaron con 0.
+
+\section{Protocolo experimental}
+- Validación cruzada: KFold 5-fold con \texttt{shuffle=True} y \texttt{random\_state=42}.
+- Métricas: R² (CV, usado como criterio de selección), MSE y MAE (evaluadas sobre el conjunto de entrenamiento completo para resumen).
+- Seed: 42.
+- Modelos evaluados: KNN (k=3, k=5), Regresión Lineal, Ridge (\(\alpha=1.0\)), Lasso (\(\alpha=0.1\)), ElasticNet (\(\alpha=0.1\)), Decision Tree (max\,depth=5), Random Forest (n\,estimators=50, max\,depth=5), SVR (RBF, C=100).
+
+\section{Modelos y formulación (breve)}
+A continuación se resume la idea central y la formulación matemática esencial de cada modelo.
+
+\subsection{Regresión lineal ordinaria}
+Modelo lineal: \(y = X\beta + \varepsilon\), estimación por mínimos cuadrados ordinarios:
+\[ \hat{\beta} = (X^{\top}X)^{-1} X^{\top} y. \]
+Ventaja: interpretable; desventaja: sensible a multicolinealidad y outliers.
+
+\subsection{Ridge (regularización L2)}
+Minimiza \(\|y - X\beta\|_2^2 + \alpha \|\beta\|_2^2\). Penaliza la norma \(L_2\) de los coeficientes para reducir varianza.
+
+\subsection{Lasso (regularización L1)}
+Minimiza \(\|y - X\beta\|_2^2 + \alpha \|\beta\|_1\). Produce soluciones escasas (selección de variables).
+
+\subsection{ElasticNet}
+Combinación de L1 y L2: penaliza \(\alpha(\rho \|\beta\|_1 + (1-\rho) \|\beta\|_2^2)\), útil cuando hay correlación entre variables.
+
+\subsection{K-Nearest Neighbors (KNN)}
+Predicción basada en la media de los k vecinos más cercanos en el espacio de features. No asume forma paramétrica; sensible a la escala de las features.
+
+\subsection{Support Vector Regression (SVR)}
+SVR con kernel RBF busca una función plana que deje un margen \(\varepsilon\)-insensible. En la forma primal (simplificada):
+\[ \min_{w,b} \tfrac{1}{2} \|w\|^2 + C \sum_i L_{\varepsilon}(y_i - w^\top x_i - b), \]
+donde \(L_{\varepsilon}\) es la pérdida \(\varepsilon\)-insensible.
+
+\subsection{Decision Tree}
+Modelo no paramétrico que particiona recursivamente el espacio de features; interpretable, pero propenso a overfitting.
+
+\subsection{Random Forest}
+Ensamblado de árboles (bagging) que promedia predicciones de múltiples árboles para reducir varianza. Se reportan importancias de features basadas en la disminución del criterio.
+
+\section{Resultados}
+Los resultados provienen directamente del script \texttt{experiments/run\_models\_classicos.py} y se exportaron a \verb|output/full_run/results_models.csv|. A continuación se presenta la tabla resumen (ordenada por R² medio en CV):
+
+% Tabla de resultados
+\begin{table}[ht]
+\centering
+\caption{Resumen de métricas por modelo}
+\begin{tabular}{lrrrrr}
+\toprule
+Modelo & cv\_r2\_mean & cv\_r2\_std & MSE & MAE & R² \\
+\midrule
+Random Forest & -2.4084 & 2.6050 & 1.0772 & 0.8767 & 0.9423 \\
+KNN (k=3) & -3.5707 & 3.2852 & 4.8593 & 1.6889 & 0.7397 \\
+Lasso (\(\alpha=0.1\)) & -3.8720 & 3.7321 & 8.2614 & 2.3716 & 0.5574 \\
+Decision Tree & -4.7405 & 6.6825 & 0.0000 & 0.0000 & 1.0000 \\
+KNN (k=5) & -4.8633 & 3.4261 & 8.5387 & 2.3467 & 0.5426 \\
+ElasticNet & -5.7379 & 7.3465 & 11.3750 & 2.9468 & 0.3906 \\
+Ridge (\(\alpha=1.0\)) & -6.0179 & 7.9491 & 11.3456 & 2.9367 & 0.3922 \\
+SVM & -6.5572 & 8.6872 & 7.6892 & 2.1611 & 0.5881 \\
+Regresión Lineal & -12.5545 & 15.5509 & 5.5752 & 1.9046 & 0.7013 \\
+\bottomrule
+\end{tabular}
+\label{tab:resultados}
+\end{table}
+
+\subsection{Importancias de features (Random Forest)}
+Tabla con las importancias relativas extraídas de \verb|output/full_run/feature_importances.csv| (top 6):
+\begin{table}[ht]
+\centering
+\caption{Importancias de features (Random Forest)}
+\begin{tabular}{lr}
+\toprule
+Feature & Importance \\
+\midrule
+feature2 & 0.3465 \\
+feature5 & 0.2653 \\
+feature1 & 0.1509 \\
+feature3 & 0.0878 \\
+feature4 & 0.0767 \\
+feature6 & 0.0728 \\
+\bottomrule
+\end{tabular}
+\label{tab:importancias}
+\end{table}
+
+\subsection{Figuras}
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.8\textwidth]{../output/full\_run/summary\_models.png}
+  \caption{Resumen de CV R² y MAE por modelo.}
+  \label{fig:summary}
+\end{figure}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.7\textwidth]{../output/compare\_models.png}
+  \caption{Comparación (boxplot) de las distribuciones CV R² entre los dos mejores modelos.}
+  \label{fig:compare}
+\end{figure}
+
+\section{Comparación estadística (bootstrap)}
+Se realizó un análisis bootstrap sobre las puntuaciones CV (R²) de los dos mejores modelos para estimar la diferencia media y su intervalo de confianza al 95\%. Los resultados resumidos en \texttt{output/compare\_bootstrap.json} son:
+
+\begin{itemize}
+  \item Top1: Random Forest
+  \item Top2: KNN (k=3)
+  \item Diferencia media (Top1 - Top2): 1.1383
+  \item IC 95\%: [ -2.6397 , 4.9902 ]
+\end{itemize}
+
+Interpretación: la diferencia media favorece a Random Forest, pero el intervalo de confianza incluye 0, por lo que no podemos afirmar con un 95\% de confianza que Random Forest sea consistentemente mejor que KNN (k=3) en este conjunto y configuración.
+
+\section{Discusión y conclusiones}
+- El comportamiento variable de las métricas CV (desviaciones altas) sugiere que el dataset es pequeño o heterogéneo; la varianza entre folds es significativa para muchos modelos.
+- Decision Tree muestra R²=1 en entrenamiento (overfitting claro) pero su CV es pobre y con alta varianza.
+- Random Forest, al promediar árboles, obtiene la mejor media de CV R², aunque la incertidumbre del bootstrap indica que la ventaja no es concluyente.
+- Modelos lineales con regularización (Ridge/Lasso/ElasticNet) no superan a los no paramétricos en este experimento; probablemente debido a relaciones no lineales o selección de features limitada.
+
+\section{Apéndice: fragmentos de código}
+A continuación se muestran fragmentos clave usados en los experimentos (extracciones de \texttt{experiments/run\_models\_classicos.py} y \texttt{experiments/compare\_models.py}):
+
+\subsection{Definición de modelos (fragmento)}
+\begin{lstlisting}[language=Python]
+modelos = {
+    'KNN (k=3)': KNeighborsRegressor(n_neighbors=3),
+    'KNN (k=5)': KNeighborsRegressor(n_neighbors=5),
+    'Regresion Lineal': LinearRegression(),
+    'Ridge (alpha=1.0)': Ridge(alpha=1.0),
+    'Lasso (alpha=0.1)': Lasso(alpha=0.1),
+    'ElasticNet': ElasticNet(alpha=0.1),
+    'Decision Tree': DecisionTreeRegressor(max_depth=5, random_state=args.seed),
+    'Random Forest': RandomForestRegressor(n_estimators=50, max_depth=5, random_state=args.seed),
+    'SVM': SVR(kernel='rbf', C=100),
+}
+\end{lstlisting}
+
+\subsection{Bucle de evaluación (fragmento)}
+\begin{lstlisting}[language=Python]
+for nombre, modelo in modelos.items():
+    cv_scores = cross_val_score(modelo, X, y, cv=kfold, scoring='r2', n_jobs=args.n_jobs)
+    cv_scores_all[nombre] = cv_scores.tolist()
+
+    modelo.fit(X, y)
+    y_pred = modelo.predict(X)
+
+    mse = mean_squared_error(y, y_pred)
+    mae = mean_absolute_error(y, y_pred)
+    r2 = r2_score(y, y_pred)
+
+    resultados[nombre] = {
+        'cv_r2_mean': float(np.mean(cv_scores)),
+        'cv_r2_std': float(np.std(cv_scores)),
+        'mse': float(mse),
+        'mae': float(mae),
+        'r2': float(r2),
+    }
+\end{lstlisting}
+
+\subsection{Función bootstrap (fragmento)}
+\begin{lstlisting}[language=Python]
+def bootstrap_diff(a, b, n_iter=1000, seed=0):
+    rng = np.random.default_rng(seed)
+    diffs = []
+    n = min(len(a), len(b))
+    for _ in range(n_iter):
+        ia = rng.choice(a, size=n, replace=True)
+        ib = rng.choice(b, size=n, replace=True)
+        diffs.append(np.mean(ia) - np.mean(ib))
+    diffs = np.array(diffs)
+    lo, hi = np.percentile(diffs, [2.5, 97.5])
+    return float(np.mean(diffs)), float(lo), float(hi)
+\end{lstlisting}
+
+\section{Reproducibilidad}
+Comandos para reproducir los experimentos (desde la raíz del proyecto con el entorno virtual activado):
+\begin{lstlisting}[language=sh]
+python experiments/run_models_classicos.py --data-path fatigueset-lib/data/sample/sample_df.csv --output-dir output/full_run
+python experiments/compare_models.py --cv-path output/full_run/cv_scores.pkl --output-dir output/full_run
+\end{lstlisting}
+
+Notas: asegurarse de tener instaladas las dependencias listadas en fatigueset-lib/requirements.txt (pandas, numpy, matplotlib, scikit-learn, etc.).
+
+\section{Limitaciones}
+- Tamaño del dataset y variabilidad entre folds limitan la potencia estadística.
+- Preprocesado simple (imputación por 0) puede afectar a modelos sensibles a escalas; se recomienda normalizar/estandarizar y evaluar pipelines con GridSearchCV para tunear hiperparámetros.
+
+\section{Referencias}
+- Hastie, T., Tibshirani, R., Friedman, J. (2009). The Elements of Statistical Learning.
+- scikit-learn documentation: \url{https://scikit-learn.org}
+
+\end{document}
