@@ -5,6 +5,7 @@ import argparse
 from pathlib import Path
 import json
 import pickle
+import re
 
 import pandas as pd
 import numpy as np
@@ -64,6 +65,11 @@ def run(args):
         modelo.fit(X, y)
         y_pred = modelo.predict(X)
 
+        # Serializar y guardar el modelo entrenado
+        nombre_sanitizado = re.sub(r'[^a-zA-Z0-9_]', '_', nombre.lower().replace(' ', '_'))
+        with open(out_dir / f"{nombre_sanitizado}.pkl", 'wb') as f:
+            pickle.dump(modelo, f)
+
         mse = mean_squared_error(y, y_pred)
         mae = mean_absolute_error(y, y_pred)
         r2 = r2_score(y, y_pred)
@@ -116,7 +122,7 @@ def run(args):
 def cli():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data-path', default='fatigueset-lib/data/sample/sample_df.csv')
-    parser.add_argument('--output-dir', default='output')
+    parser.add_argument('--output-dir', default='models/classicos')
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--n-jobs', type=int, default=1)
     args = parser.parse_args()

@@ -10,7 +10,7 @@ print("=" * 60)
 print("TEST 1: Validacion JSON notebook")
 print("=" * 60)
 
-nb_path = Path("Jupyters/Feature_Engineering_Fisiologico_v3.ipynb")
+nb_path = Path("Jupyters/1.Preprocesado/Feature_Engineering_Fisiologico.ipynb")
 with open(nb_path) as f:
     nb = json.load(f)
     
@@ -22,7 +22,7 @@ print("\n" + "=" * 60)
 print("TEST 2: Verificacion de datos")
 print("=" * 60)
 
-BASE = Path('/c/Users/egull/OneDrive/Documentos/Proyectos/tfg')
+BASE = Path(__file__).parent.resolve()
 DATASET = BASE / 'fatigueset'
 
 print(f"Dataset path: {DATASET}")
@@ -64,7 +64,7 @@ print("=" * 60)
 if agg_file.exists():
     df = pd.read_csv(agg_file)
     numeric_cols = df.select_dtypes(include=[np.number]).columns
-    X = df[numeric_cols].fillna(0).values
+    X = df[numeric_cols].replace([np.inf, -np.inf], np.nan).fillna(0).values
     
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
@@ -89,7 +89,7 @@ print("=" * 60)
 print("""
 ✅ Notebook READY FOR USE
 
-Ubicacion: Jupyters/Feature_Engineering_Fisiologico_v3.ipynb
+Ubicacion: Jupyters/1.Preprocesado/Feature_Engineering_Fisiologico.ipynb
 
 Contenido:
 - 13 celdas de codigo ejecutable
@@ -100,7 +100,7 @@ Contenido:
 - Correlation heatmaps
 
 Como usar:
-1. jupyter notebook Jupyters/Feature_Engineering_Fisiologico_v3.ipynb
+1. jupyter notebook Jupyters/1.Preprocesado/Feature_Engineering_Fisiologico.ipynb
 2. Ejecutar celdas secuencialmente
 3. Observar visualizaciones y resultados
 """)

@@ -1,0 +1,120 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "pytest-fatigueset-lib",
+			"type": "shell",
+			"command": "c:/Users/egull/OneDrive/Documentos/Proyectos/tfg/.venv/Scripts/python.exe",
+			"args": [
+				"-m",
+				"pytest",
+				"-q",
+				"fatigueset-lib/tests"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "rnn-sanity-seq16",
+			"type": "shell",
+			"command": "pwsh",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"$env:PYTHONPATH='fatigueset-lib'; c:/Users/egull/OneDrive/Documentos/Proyectos/tfg/.venv/Scripts/python.exe experiments/run_rnn.py --dataset-path fatigueset --seq-len 16 --step 8 --epochs 2 --n-splits 2 --batch-size 16 --output-dir output/rnn_sanity"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "rnn-sanity-seq16-cmd",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"set PYTHONPATH=fatigueset-lib&& c:/Users/egull/OneDrive/Documentos/Proyectos/tfg/.venv/Scripts/python.exe experiments/run_rnn.py --dataset-path fatigueset --seq-len 16 --step 8 --epochs 2 --n-splits 2 --batch-size 16 --output-dir output/rnn_sanity"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "pytest-fatigueset-lib-after-mergefix",
+			"type": "shell",
+			"command": "c:/Users/egull/OneDrive/Documentos/Proyectos/tfg/.venv/Scripts/python.exe",
+			"args": [
+				"-m",
+				"pytest",
+				"-q",
+				"fatigueset-lib/tests"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "rnn-sanity-seq16-v2",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"set PYTHONPATH=fatigueset-lib&& c:/Users/egull/OneDrive/Documentos/Proyectos/tfg/.venv/Scripts/python.exe experiments/run_rnn.py --dataset-path fatigueset --seq-len 16 --step 8 --epochs 2 --n-splits 2 --batch-size 16 --output-dir output/rnn_sanity"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "rnn-sanity-seq16-v3",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"set PYTHONPATH=fatigueset-lib&& c:/Users/egull/OneDrive/Documentos/Proyectos/tfg/.venv/Scripts/python.exe experiments/run_rnn.py --dataset-path fatigueset --seq-len 16 --step 8 --epochs 2 --n-splits 2 --batch-size 16 --output-dir output/rnn_sanity"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "rnn-sanity-seq16-v4",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"set PYTHONPATH=fatigueset-lib&& c:/Users/egull/OneDrive/Documentos/Proyectos/tfg/.venv/Scripts/python.exe experiments/run_rnn.py --dataset-path fatigueset --seq-len 16 --step 8 --epochs 2 --n-splits 2 --batch-size 16 --output-dir output/rnn_sanity"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "rnn-benchmark-mid",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"set PYTHONPATH=fatigueset-lib&& c:/Users/egull/OneDrive/Documentos/Proyectos/tfg/.venv/Scripts/python.exe experiments/run_rnn.py --dataset-path fatigueset --seq-len 32 --step 8 --epochs 5 --n-splits 3 --batch-size 16 --output-dir output/rnn_benchmark_mid"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "rnn-benchmark-real",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"set PYTHONPATH=fatigueset-lib&& c:/Users/egull/OneDrive/Documentos/Proyectos/tfg/.venv/Scripts/python.exe experiments/run_rnn.py --dataset-path fatigueset --seq-len 64 --step 16 --epochs 10 --n-splits 5 --batch-size 16 --output-dir output/rnn_benchmark_real"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "rnn-benchmark-real-v2",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"set PYTHONPATH=fatigueset-lib&& c:/Users/egull/OneDrive/Documentos/Proyectos/tfg/.venv/Scripts/python.exe experiments/run_rnn.py --dataset-path fatigueset --seq-len 64 --step 16 --epochs 10 --n-splits 3 --batch-size 16 --output-dir output/rnn_benchmark_real_v2"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "rnn-benchmark-real-v3",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"set PYTHONPATH=fatigueset-lib&& c:/Users/egull/OneDrive/Documentos/Proyectos/tfg/.venv/Scripts/python.exe experiments/run_rnn.py --dataset-path fatigueset --seq-len 64 --step 16 --epochs 6 --n-splits 3 --batch-size 16 --output-dir output/rnn_benchmark_real_v3"
+			],
+			"isBackground": false
+		}
+	]
+}
