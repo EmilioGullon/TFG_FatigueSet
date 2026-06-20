@@ -104,8 +104,10 @@ Contendrá funciones desacopladas del modelo:
   - Procesamiento independiente de canales (*channel independence*).
   - Auto-atención a nivel de parches.
 
-- **xLSTM (`xLSTMRegressor`):**
-  - Implementación adaptada de sLSTM (stabilized LSTM) o mLSTM (matrix LSTM) en PyTorch puro para regresión.
+- **xLSTM (`CustomxLSTMRegressor`):**
+  - Variante sLSTM (Stabilized LSTM) con puertas de olvido, entrada y salida exponenciales.
+  - Mecanismo de estabilización numérica mediante el seguimiento del máximo $m_t$ y el normalizador $n_t$.
+  - Mapeo lineal del último estado oculto $h_t$ a la salida bidimensional `(2,)`.
 
 ---
 
