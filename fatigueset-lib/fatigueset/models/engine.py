@@ -203,24 +203,32 @@ def train_kfold_cv(
         p = np.vstack(preds) if preds else np.empty((0, 2), dtype=np.float32)
         t = np.vstack(ytrue) if ytrue else np.empty((0, 2), dtype=np.float32)
         
+        num_params = int(sum(p.numel() for p in model.parameters() if p.requires_grad))
+        
         if len(t) == 0:
             fold_result = {
                 'mse_fisica': float('nan'),
                 'mae_fisica': float('nan'),
+                'rmse_fisica': float('nan'),
                 'r2_fisica': float('nan'),
                 'mse_mental': float('nan'),
                 'mae_mental': float('nan'),
+                'rmse_mental': float('nan'),
                 'r2_mental': float('nan'),
+                'num_params': num_params,
                 'n_test': 0,
             }
         else:
             fold_result = {
                 'mse_fisica': float(mean_squared_error(t[:, 0], p[:, 0])),
                 'mae_fisica': float(mean_absolute_error(t[:, 0], p[:, 0])),
+                'rmse_fisica': float(np.sqrt(mean_squared_error(t[:, 0], p[:, 0]))),
                 'r2_fisica': float(r2_score(t[:, 0], p[:, 0])),
                 'mse_mental': float(mean_squared_error(t[:, 1], p[:, 1])),
                 'mae_mental': float(mean_absolute_error(t[:, 1], p[:, 1])),
+                'rmse_mental': float(np.sqrt(mean_squared_error(t[:, 1], p[:, 1]))),
                 'r2_mental': float(r2_score(t[:, 1], p[:, 1])),
+                'num_params': num_params,
                 'n_test': int(len(test_idx)),
             }
             

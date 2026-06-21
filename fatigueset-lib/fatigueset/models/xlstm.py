@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Extended Long Short-Term Memory (xLSTM) - Variante sLSTM en PyTorch implementada manualmente para FatigueSet.
-Referencia: Beck, M. et al. (2024). "xLSTM: Extended Long Short-Term Memory". arXiv preprint arXiv:2405.04517.
+Extended Long Short-Term Memory (xLSTM / sLSTM) en PyTorch implementada de forma manual para FatigueSet.
+Basado en: Beck, M. et al. (2024). "xLSTM: Extended Long Short-Term Memory". arXiv.
 """
 
 from __future__ import annotations
@@ -17,10 +17,9 @@ except ImportError:
 
 
 if nn is not None:
-    class CustomsLSTMCell(nn.Module):
+    class CustomxLSTMCell(nn.Module):
         """
-        Celda sLSTM manual (Stabilized LSTM) con puertas exponenciales.
-        Utiliza m_t y n_t para la estabilización numérica frente al crecimiento exponencial.
+        Celda sLSTM (Stabilized LSTM) manual que implementa la estabilización logarítmica y puertas exponenciales.
         """
         def __init__(self, input_size: int, hidden_size: int):
             super().__init__()
@@ -37,15 +36,15 @@ if nn is not None:
             self.U_i = nn.Parameter(torch.empty(hidden_size, hidden_size))
             self.b_i = nn.Parameter(torch.empty(hidden_size))
 
+            # Parámetros para el candidato de celda (Candidate Cell State)
+            self.W_c = nn.Parameter(torch.empty(hidden_size, input_size))
+            self.U_c = nn.Parameter(torch.empty(hidden_size, hidden_size))
+            self.b_c = nn.Parameter(torch.empty(hidden_size))
+
             # Parámetros para la puerta de salida (Output Gate)
             self.W_o = nn.Parameter(torch.empty(hidden_size, input_size))
             self.U_o = nn.Parameter(torch.empty(hidden_size, hidden_size))
             self.b_o = nn.Parameter(torch.empty(hidden_size))
-
-            # Parámetros para la entrada de celda (Cell Input Candidate)
-            self.W_z = nn.Parameter(torch.empty(hidden_size, input_size))
-            self.U_z = nn.Parameter(torch.empty(hidden_size, hidden_size))
-            self.b_z = nn.Parameter(torch.empty(hidden_size))
 
             self.reset_parameters()
 
@@ -55,51 +54,57 @@ if nn is not None:
             for p in self.parameters():
                 p.data.uniform_(-stdv, stdv)
 
-        def forward(self, x: torch.Tensor, h_prev: torch.Tensor, c_prev: torch.Tensor, n_prev: torch.Tensor, m_prev: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        def forward(
+            self,
+            x: torch.Tensor,
+            h_prev: torch.Tensor,
+            c_prev: torch.Tensor,
+            n_prev: torch.Tensor,
+            m_prev: torch.Tensor
+        ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
             """
-            Paso de tiempo individual de la celda sLSTM.
+            Paso individual de tiempo para la celda sLSTM.
             x: (batch_size, input_size)
             h_prev: (batch_size, hidden_size)
             c_prev: (batch_size, hidden_size)
             n_prev: (batch_size, hidden_size)
             m_prev: (batch_size, hidden_size)
             """
-            # Pre-activaciones
+            # Pre-activaciones lineales
             f_tilde = x @ self.W_f.t() + h_prev @ self.U_f.t() + self.b_f
             i_tilde = x @ self.W_i.t() + h_prev @ self.U_i.t() + self.b_i
+            c_tilde = torch.tanh(x @ self.W_c.t() + h_prev @ self.U_c.t() + self.b_c)
             o_tilde = x @ self.W_o.t() + h_prev @ self.U_o.t() + self.b_o
-            z_tilde = x @ self.W_z.t() + h_prev @ self.U_z.t() + self.b_z
 
-            # 1. Actualización del estabilizador (m_t)
-            # m_t = max(m_{t-1} + f_tilde, i_tilde)
+            # Estabilización en escala logarítmica para evitar desbordamiento por exponenciales
+            # m_t = max(m_prev + f_tilde, i_tilde)
             m_t = torch.max(m_prev + f_tilde, i_tilde)
 
-            # 2. Exponenciación de puertas con estabilización
-            # f_t = exp(f_tilde + m_prev - m_t)
-            # i_t = exp(i_tilde - m_t)
-            f_t = torch.exp(f_tilde + m_prev - m_t)
-            i_t = torch.exp(i_tilde - m_t)
+            # Puertas exponenciales estabilizadas
+            # f_t^s = exp(m_prev + f_tilde - m_t)
+            # i_t^s = exp(i_tilde - m_t)
+            f_s = torch.exp(m_prev + f_tilde - m_t)
+            i_s = torch.exp(i_tilde - m_t)
 
-            # 3. Puerta de salida (sigmoide normal)
+            # Actualización del estado de la celda y el normalizador
+            c_t = f_s * c_prev + i_s * c_tilde
+            n_t = f_s * n_prev + i_s
+
+            # Estado de celda estabilizado (normalizado)
+            # Para evitar división por cero en el primer paso, usamos una pequeña constante epsilon
+            eps = 1e-8
+            c_hat = c_t / (n_t + eps)
+
+            # Compuerta de salida y nuevo estado oculto
             o_t = torch.sigmoid(o_tilde)
-
-            # 4. Candidato de celda (tanh)
-            z_t = torch.tanh(z_tilde)
-
-            # 5. Estado de celda y normalizador
-            c_t = f_t * c_prev + i_t * z_t
-            n_t = f_t * n_prev + i_t
-
-            # 6. Salida oculta estabilizada
-            # Añadimos epsilon = 1e-8 para evitar división por cero en la normalización
-            h_t = o_t * (c_t / (n_t + 1e-8))
+            h_t = o_t * torch.tanh(c_hat)
 
             return h_t, c_t, n_t, m_t
 
 
-    class CustomsLSTM(nn.Module):
+    class CustomxLSTM(nn.Module):
         """
-        Capa sLSTM multicapa que procesa secuencias completas usando CustomsLSTMCell.
+        Capa multicapa de sLSTM (xLSTM) que procesa secuencias completas de series temporales.
         """
         def __init__(self, input_size: int, hidden_size: int, num_layers: int = 1, dropout: float = 0.0):
             super().__init__()
@@ -111,15 +116,14 @@ if nn is not None:
             self.layers = nn.ModuleList()
             for i in range(num_layers):
                 layer_input_size = input_size if i == 0 else hidden_size
-                self.layers.append(CustomsLSTMCell(layer_input_size, hidden_size))
+                self.layers.append(CustomxLSTMCell(layer_input_size, hidden_size))
 
             self.dropout_layer = nn.Dropout(dropout) if dropout > 0.0 else nn.Identity()
 
         def forward(self, x: torch.Tensor, hx: Optional[Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]] = None) -> Tuple[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]]:
             """
-            Procesamiento de toda la secuencia temporal.
             x: (batch_size, seq_len, input_size)
-            hx: tuple de (h_0, c_0, n_0, m_0) de dimensiones (num_layers, batch_size, hidden_size)
+            hx: tuple de (h_0, c_0, n_0, m_0)
             """
             batch_size, seq_len, _ = x.size()
             device = x.device
@@ -127,9 +131,8 @@ if nn is not None:
             if hx is None:
                 h_init = torch.zeros(self.num_layers, batch_size, self.hidden_size, device=device)
                 c_init = torch.zeros(self.num_layers, batch_size, self.hidden_size, device=device)
-                # n_0 se inicializa a unos para la normalización inicial
+                # Según el paper, el normalizador n_0 se inicializa en 1.0 y el log-normalizador m_0 en 0.0
                 n_init = torch.ones(self.num_layers, batch_size, self.hidden_size, device=device)
-                # m_0 se inicializa a ceros como log-space inicial
                 m_init = torch.zeros(self.num_layers, batch_size, self.hidden_size, device=device)
             else:
                 h_init, c_init, n_init, m_init = hx
@@ -173,31 +176,30 @@ if nn is not None:
 
     class CustomxLSTMRegressor(nn.Module):
         """
-        Regresor final xLSTM (sLSTM) para predecir fatiga física y mental.
+        Regresor final que mapea el último estado oculto de la sLSTM multicapa a la salida continua.
         """
         def __init__(self, input_size: int, hidden_size: int = 64, num_layers: int = 2, dropout: float = 0.2, output_size: int = 2):
             super().__init__()
-            self.lstm = CustomsLSTM(input_size, hidden_size, num_layers, dropout)
+            self.xlstm = CustomxLSTM(input_size, hidden_size, num_layers, dropout)
             self.fc = nn.Linear(hidden_size, output_size)
 
         def forward(self, x: torch.Tensor) -> torch.Tensor:
             """
-            Mapea la secuencia de entrada x a la estimación continua bidimensional.
             x: (batch_size, seq_len, input_size)
             Retorna: (batch_size, output_size)
             """
-            out, _ = self.lstm(x)
+            out, _ = self.xlstm(x)
             last_step_out = out[:, -1, :]
             return self.fc(last_step_out)
 
 else:
-    class CustomsLSTMCell:
+    class CustomxLSTMCell:
         def __init__(self, *args, **kwargs):
-            raise RuntimeError("PyTorch no está disponible. Instale torch para usar CustomsLSTMCell.")
+            raise RuntimeError("PyTorch no está disponible. Instale torch para usar CustomxLSTMCell.")
 
-    class CustomsLSTM:
+    class CustomxLSTM:
         def __init__(self, *args, **kwargs):
-            raise RuntimeError("PyTorch no está disponible. Instale torch para usar CustomsLSTM.")
+            raise RuntimeError("PyTorch no está disponible. Instale torch para usar CustomxLSTM.")
 
     class CustomxLSTMRegressor:
         def __init__(self, *args, **kwargs):

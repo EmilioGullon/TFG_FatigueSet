@@ -10,7 +10,7 @@ from .cnn_lstm import CustomCNNLSTMRegressor
 from .tcn import CustomTCNRegressor
 from .transformer import CustomTSTransformerRegressor
 from .patchtst import CustomPatchTSTRegressor
-from .xlstm import CustomxLSTMRegressor, CustomsLSTM, CustomsLSTMCell
+from .xlstm import CustomxLSTMRegressor, CustomxLSTM, CustomxLSTMCell
 
 __all__ = [
     'FatigueSequenceDataset',
@@ -27,6 +27,6 @@ __all__ = [
     'CustomTSTransformerRegressor',
     'CustomPatchTSTRegressor',
     'CustomxLSTMRegressor',
-    'CustomsLSTM',
-    'CustomsLSTMCell',
+    'CustomxLSTM',
+    'CustomxLSTMCell',
 ]

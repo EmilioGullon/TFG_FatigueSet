@@ -72,7 +72,7 @@ Contendrá funciones desacopladas del modelo:
 - `train_step(model, dataloader, loss_fn, optimizer, device)`
 - `val_step(model, dataloader, loss_fn, device)`
 - `train_model(model, train_loader, val_loader, loss_fn, optimizer, epochs, patience, device)` -> Retorna métricas por época y el mejor modelo.
-- `train_kfold_cv(model_class, model_kwargs, pipeline, seq_len, step, n_splits, opt_lr, epochs, device)` -> Ejecuta validación cruzada GroupKFold por participante y retorna MAE, R², RMSE, tiempo e hiperparámetros.
+- `train_kfold_cv(...)` -> Ejecuta validación cruzada GroupKFold por participante y retorna MAE, R², **RMSE** (para fatiga física y mental), **número de parámetros entrenables del modelo**, tiempo de ejecución y métricas detalladas en el archivo JSON.
 
 ### B. Especificaciones de los Modelos (PyTorch `nn.Module`)
 
@@ -109,13 +109,22 @@ Contendrá funciones desacopladas del modelo:
   - Mecanismo de estabilización numérica mediante el seguimiento del máximo $m_t$ y el normalizador $n_t$.
   - Mapeo lineal del último estado oculto $h_t$ a la salida bidimensional `(2,)`.
 
+## User Review Required
+
+> [!IMPORTANT]
+> - **sLSTM (Stabilized LSTM) para xLSTM:** Se implementará la variante sLSTM en [xlstm.py](file:///c:/Users/egull/OneDrive/Documentos/Proyectos/tfg/fatigueset-lib/fatigueset/models/xlstm.py) usando puertas exponenciales y estabilización numérica mediante log-normalizador ($m_t$ y $n_t$).
+> - **Métricas y Parámetros en engine.py:** Se actualizará [engine.py](file:///c:/Users/egull/OneDrive/Documentos/Proyectos/tfg/fatigueset-lib/fatigueset/models/engine.py) para calcular y registrar explícitamente RMSE de fatiga física y mental, y contar los parámetros entrenables del modelo.
+> - **Sanity Check script:** Se desarrollará [verify_models_sanity.py](file:///c:/Users/egull/OneDrive/Documentos/Proyectos/tfg/experiments/verify_models_sanity.py) para testear secuencialmente todos los regresores (incluyendo la nueva xLSTM).
+> - **Optuna:** Se instalará `optuna` y se implementará [experimento_comparativo_optuna.ipynb](file:///c:/Users/egull/OneDrive/Documentos/Proyectos/tfg/Jupyters/experimento_comparativo_optuna.ipynb) para búsqueda bayesiana de hiperparámetros.
+
 ---
 
 ## 5. Plan de Verificación
 
-1. **Sanity Check:**
-   - Ejecutar `verify_models_sanity.py` en el entorno virtual para verificar que todos los modelos se instancien correctamente y realicen un paso forward/backward sin errores de dimensiones en tensores.
-2. **Notebooks Individuales:**
-   - Validar que cada notebook explique teóricamente el modelo (con citas científicas), muestre su diagrama de flujo, y se ejecute correctamente en un mini-entrenamiento.
-3. **Optimización con Optuna:**
-   - Validar que el notebook comparativo ejecute la búsqueda bayesiana sobre un subconjunto de datos y guarde la tabla final con las métricas de comparación (MAE, R², RMSE, parámetros, tiempos) para todos los modelos.
+1. **Pruebas Unitarias de xLSTM:**
+   - Crear y ejecutar [test_xlstm.py](file:///c:/Users/egull/OneDrive/Documentos/Proyectos/tfg/tests/test_xlstm.py) para asegurar que las celdas y el regresor de xLSTM realicen pasadas forward/backward sin errores.
+2. **Sanity Check Centralizado:**
+   - Implementar [verify_models_sanity.py](file:///c:/Users/egull/OneDrive/Documentos/Proyectos/tfg/experiments/verify_models_sanity.py) y ejecutarlo para verificar que todas las clases de modelos instancien, entrenen por 1 época y predigan sin problemas de dimensiones.
+3. **Notebooks Individuales y Comparativos:**
+   - Implementar [08_xlstm.ipynb](file:///c:/Users/egull/OneDrive/Documentos/Proyectos/tfg/Jupyters/08_xlstm.ipynb) con explicaciones teóricas y entrenamiento rápido de xLSTM.
+   - Implementar [experimento_comparativo_optuna.ipynb](file:///c:/Users/egull/OneDrive/Documentos/Proyectos/tfg/Jupyters/experimento_comparativo_optuna.ipynb) realizando una búsqueda con Optuna y tabulando los resultados finales (MAE, R², RMSE, número de parámetros y tiempos).
