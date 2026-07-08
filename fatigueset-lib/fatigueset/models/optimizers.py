@@ -380,7 +380,7 @@ def sample_patchtst(trial: Any) -> Dict[str, Any]:
         "dim_feedforward": trial.suggest_int("patch_dim_ff", 64, 256, step=64),
         "dropout": trial.suggest_float("patch_dropout", 0.0, 0.4),
         "batch_size": trial.suggest_categorical(
-            "patch_batch_size", [16, 32, 64, 128]
+            "patch_batch_size", [16, 32, 64]
         ),
         **opt_params,
     }
@@ -409,7 +409,7 @@ def sample_xlstm(trial: Any) -> Dict[str, Any]:
         "num_layers": trial.suggest_int("xlstm_num_layers", 1, 4),
         "dropout": trial.suggest_float("xlstm_dropout", 0.0, 0.4),
         "batch_size": trial.suggest_categorical(
-            "xlstm_batch_size", [16, 32, 64, 128]
+            "xlstm_batch_size", [16, 32, 64]
         ),
         **opt_params,
     }

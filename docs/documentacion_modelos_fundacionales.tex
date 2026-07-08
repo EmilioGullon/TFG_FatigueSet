@@ -1,0 +1,794 @@
+% -*- coding: utf-8 -*-
+% Documentación Técnica: Modelos Fundacionales e Infraestructura de Servidor GPU
+% Trabajo de Fin de Grado — FatigueSet
+% Autor: Emilio Gullón
+% Fecha: Julio 2026
+
+\documentclass[12pt, a4paper]{article}
+
+% ---- Paquetes ----
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath, amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{csquotes}
+\usepackage{multirow}
+
+\geometry{margin=2.5cm}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!70!black,
+    citecolor=green!50!black,
+    urlcolor=blue!60!black,
+}
+
+% ---- Estilo de código Python ----
+\definecolor{codebg}{HTML}{F7F7F7}
+\definecolor{codegreen}{HTML}{28A745}
+\definecolor{codeorange}{HTML}{D73A49}
+\definecolor{codeblue}{HTML}{0366D6}
+\definecolor{codegray}{HTML}{6A737D}
+
+\lstdefinestyle{pythonstyle}{
+    language=Python,
+    backgroundcolor=\color{codebg},
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{codeorange}\bfseries,
+    stringstyle=\color{codegreen},
+    commentstyle=\color{codegray}\itshape,
+    identifierstyle=\color{codeblue},
+    numbers=left,
+    numberstyle=\tiny\color{codegray},
+    numbersep=8pt,
+    frame=single,
+    rulecolor=\color{codegray!30},
+    breaklines=true,
+    showstringspaces=false,
+    tabsize=4,
+    captionpos=b,
+    xleftmargin=1.5em,
+}
+\lstset{style=pythonstyle}
+
+% ---- Comandos útiles ----
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\fatigueset}{\textsc{FatigueSet}}
+\newcommand{\moment}{\textsc{MOMENT}}
+\newcommand{\chronos}{\textsc{Chronos}}
+\newcommand{\timesfm}{\textsc{TimesFM}}
+
+% ---- Metadatos ----
+\title{
+    \vspace{-2cm}
+    \textbf{Documentación Técnica: Modelos Fundacionales\\
+    para Series Temporales e Infraestructura GPU} \\[0.5em]
+    \large Trabajo de Fin de Grado --- Predicción de Fatiga con \fatigueset{}
+}
+\author{Emilio Gullón}
+\date{Julio 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Este documento recoge la implementación, despliegue y evaluación experimental de tres modelos fundacionales para series temporales --- \moment{} (encoder-only), \chronos{} (decoder-only probabilístico) y \timesfm{} (decoder-only con parches) --- aplicados a la predicción de fatiga física y mental a partir de señales fisiológicas del dataset \fatigueset{}. Se describe en detalle la librería \code{fatigueset.models.foundation}, el módulo de optimización de hiperparámetros con Optuna (\code{fatigueset.models.optimizers}), la infraestructura de ejecución en un clúster GPU universitario (UGR), y los resultados comparativos frente a modelos clásicos de Machine Learning y redes de Deep Learning diseñadas a medida. Adicionalmente, se documentan los problemas técnicos encontrados (errores de memoria GPU, límites de tiempo en SLURM) y las soluciones aplicadas.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+% ======================================================================
+\section{Introducción}
+\label{sec:introduccion}
+% ======================================================================
+
+\subsection{Contexto del TFG y FatigueSet}
+
+Este Trabajo de Fin de Grado aborda la predicción cuantitativa de fatiga física y mental a partir de señales fisiológicas multicanal del dataset \fatigueset{} \cite{kalanadhabhatta2022fatigueset}. El dataset contiene registros de 12 participantes monitorizados con dispositivos portátiles (Empatica E4 y Zephyr BioHarness) durante tareas cognitivas y físicas, proporcionando 23 canales fisiológicos (acelerómetros, electrodermal, temperatura, ritmo cardíaco, respiración, etc.) junto con puntuaciones subjetivas de fatiga en escala 0--100.
+
+El pipeline experimental se estructura en cuatro fases progresivas de complejidad:
+\begin{enumerate}[label=\arabic*.]
+    \item \textbf{Modelos clásicos de Machine Learning}: Random Forest, KNN, Lasso, Ridge, SVM, Decision Tree, ElasticNet y Regresión Lineal.
+    \item \textbf{Modelos de Deep Learning diseñados a medida}: LSTM, GRU, CNN-LSTM, TCN, Transformer, PatchTST y xLSTM.
+    \item \textbf{Optimización de hiperparámetros con Optuna}: Búsqueda bayesiana con TPE (Tree-structured Parzen Estimator) y optimizadores personalizados.
+    \item \textbf{Modelos fundacionales preentrenados}: \moment{}, \chronos{} y \timesfm{}.
+\end{enumerate}
+
+\subsection{Motivación: modelos fundacionales para series temporales}
+
+Los modelos fundacionales (\textit{Foundation Models}) representan un cambio de paradigma en el análisis de series temporales. Frente al enfoque tradicional de diseñar y entrenar un modelo específico para cada tarea, estos modelos se preentrenan sobre grandes corpora de series temporales diversas y posteriormente se adaptan a tareas downstream con mínima supervisión.
+
+El survey de Kottapalli et al. \cite{kottapalli2025survey} identifica tres paradigmas de adaptación:
+\begin{itemize}
+    \item \textbf{Zero-shot}: el modelo preentrenado se aplica directamente sin ningún reentrenamiento.
+    \item \textbf{Fine-tuning}: se reentrenan las últimas capas o una cabeza de tarea ligera.
+    \item \textbf{Prompting / In-context learning}: se proporcionan ejemplos de demostración al modelo.
+\end{itemize}
+
+En este TFG se aplican los tres modelos fundacionales más relevantes identificados en el survey, evaluando su capacidad como extractores de características universales para la predicción de fatiga en un dominio no visto durante su preentrenamiento.
+
+\subsection{Objetivos de esta fase experimental}
+
+Los objetivos específicos de la fase de modelos fundacionales son:
+\begin{enumerate}[label=(\alph*)]
+    \item Implementar adaptadores para \moment{}, \chronos{} y \timesfm{} dentro de la librería modular \code{fatigueset}.
+    \item Evaluar el rendimiento de cada modelo en predicción de fatiga física y mental usando validación cruzada GroupKFold por participante.
+    \item Comparar métricas deterministas (MAE, RMSE, $R^2$) y probabilísticas (CRPS, cobertura del intervalo de predicción al 90\%).
+    \item Desplegar y ejecutar los experimentos a escala completa en un clúster GPU universitario.
+\end{enumerate}
+
+
+% ======================================================================
+\section{Marco Teórico: Modelos Fundacionales para Series Temporales}
+\label{sec:marco_teorico}
+% ======================================================================
+
+\subsection{Taxonomía de arquitecturas}
+
+Siguiendo la taxonomía del survey de Kottapalli et al. \cite{kottapalli2025survey}, los modelos fundacionales para series temporales se clasifican según su arquitectura base:
+
+\begin{itemize}
+    \item \textbf{Encoder-only}: procesan la secuencia completa bidireccionalmente para producir representaciones contextualizadas. Ejemplo: \moment{}.
+    \item \textbf{Decoder-only}: procesan la secuencia de forma autorregresiva (causal), prediciendo el siguiente token/valor. Ejemplos: \chronos{}, \timesfm{}.
+    \item \textbf{Encoder-Decoder}: combinan ambos enfoques. Ejemplo: Lag-Llama (no implementado en este TFG).
+\end{itemize}
+
+La Tabla~\ref{tab:taxonomia_modelos} resume la taxonomía de los modelos implementados.
+
+\begin{table}[H]
+\centering
+\caption{Taxonomía de los modelos fundacionales implementados en el TFG.}
+\label{tab:taxonomia_modelos}
+\small
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{Modelo} & \textbf{Tipo} & \textbf{Patch-based} & \textbf{Multivariado} & \textbf{Probabilístico} & \textbf{Paradigma} \\
+\midrule
+\moment{} & Encoder-only & Sí & Sí & No & Fine-tuning cabeza \\
+\chronos{} & Decoder-only & No & No & Sí & Zero-shot + probe \\
+\timesfm{} & Decoder-only & Sí & No & Sí & Zero-shot + probe \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\subsection{MOMENT: arquitectura, parches y preentrenamiento}
+
+\moment{} (\textit{A Family of Open Time-series Foundation Models}) \cite{goswami2024moment} es un modelo encoder-only basado en Transformer preentrenado mediante reconstrucción de parches enmascarados (\textit{Masked Patch Reconstruction}), análogo al preentrenamiento de BERT en NLP pero adaptado a series temporales.
+
+\paragraph{Arquitectura.}
+La secuencia temporal de entrada $\mathbf{x} \in \mathbb{R}^{T \times C}$ (con $T$ pasos temporales y $C$ canales) se segmenta en \textit{parches} no superpuestos de longitud fija $P$. Cada parche se proyecta a un espacio de dimensión $d_{\text{model}}$ mediante una capa lineal, produciendo una secuencia de tokens:
+\[
+\mathbf{z}_i = W_{\text{patch}} \cdot \mathbf{x}_{[iP:(i+1)P]} + \mathbf{b}_{\text{patch}}, \quad i = 0, 1, \ldots, \lfloor T/P \rfloor - 1
+\]
+
+Los tokens se procesan por $L$ capas de Transformer encoder (auto-atención multi-cabeza + MLP feed-forward), produciendo representaciones contextualizadas $\mathbf{h}_i$ para cada parche.
+
+\paragraph{Preentrenamiento.}
+\moment{} se preentrena en el corpus \textit{Time Series Pile}, una colección de más de 1 billón de observaciones de series temporales de dominios diversos (finanzas, salud, clima, energía). El objetivo de preentrenamiento es la reconstrucción de parches enmascarados: se enmascara un porcentaje aleatorio de parches y el modelo debe reconstruirlos a partir del contexto.
+
+\paragraph{Variantes.} Se implementan dos variantes:
+\begin{itemize}
+    \item \code{MOMENT-1-small}: 40M parámetros (pruebas locales).
+    \item \code{MOMENT-1-large}: 385M parámetros (experimento en servidor, 341.250.570 parámetros totales).
+\end{itemize}
+
+\paragraph{Adaptación a FatigueSet.}
+Para adaptar \moment{} a la predicción de fatiga, se congela el backbone preentrenado y se añade una cabeza de regresión lineal \code{Linear($d_{\text{model}}$, 2)} que mapea la representación agregada (media de los embeddings de todos los parches) a las dos dimensiones de fatiga. Solo se entrenan los 2.050 parámetros de la cabeza (0.00\% del total), lo que reduce drásticamente el riesgo de sobreajuste en el pequeño dataset de \fatigueset{}.
+
+
+\subsection{Chronos: tokenización por quantile binning y T5}
+
+\chronos{} \cite{ansari2024chronos} es un framework probabilístico decoder-only para series temporales que reutiliza la arquitectura T5 (\textit{Text-to-Text Transfer Transformer}) de Google, adaptándola al dominio temporal mediante una estrategia de tokenización numérica.
+
+\paragraph{Tokenización.}
+Los valores continuos de la serie temporal se discretizan en \textit{bins} mediante \textit{quantile binning}: se calculan los cuantiles empíricos del contexto y cada valor se asigna al bin correspondiente. Esta estrategia permite reutilizar el vocabulario discreto del T5 sin modificar la arquitectura.
+
+\paragraph{Preentrenamiento.}
+\chronos{} se preentrena con un objetivo de lenguaje estándar (predicción del siguiente token) sobre el corpus TSMixup, una mezcla de series temporales reales y sintéticas generadas por Gaussian Processes.
+
+\paragraph{Variantes.}
+\begin{itemize}
+    \item \code{chronos-t5-tiny}: 8M parámetros (pruebas locales).
+    \item \code{chronos-t5-large}: 710M parámetros (experimento en servidor).
+\end{itemize}
+
+\paragraph{Adaptación a FatigueSet.}
+Dado que \chronos{} está preentrenado exclusivamente para \textit{forecasting} univariado, la adaptación a regresión multidimensional de fatiga se realiza mediante un enfoque de \textbf{linear probe} (sonda lineal):
+\begin{enumerate}
+    \item Cada uno de los 23 canales fisiológicos se trata como una serie temporal univariada independiente.
+    \item \chronos{} predice la distribución del siguiente paso para cada canal, obteniéndose la mediana como característica.
+    \item Las 23 medianas se concatenan como vector de características y se alimentan a una regresión Ridge que mapea al espacio de fatiga bidimensional.
+\end{enumerate}
+
+
+\subsection{TimesFM: parches de longitud variable y decoder patched}
+
+\timesfm{} 2.5 (\textit{Time Series Foundation Model}) \cite{das2024timesfm} es un modelo decoder-only de Google Research basado en parches de longitud variable. A diferencia de \moment{}, que usa parches de longitud fija, \timesfm{} utiliza un mecanismo de \textit{input patching} con múltiples resoluciones que permite procesar series temporales de diferentes frecuencias sin re-muestreo.
+
+\paragraph{Arquitectura.}
+\timesfm{} 2.5 utiliza un decoder Transformer con 200M de parámetros, entrenado sobre 100 billones de observaciones de series temporales reales y sintéticas. Su diseño clave es la predicción por parches con tamaño de salida variable (\textit{output patch size}), lo que lo hace extremadamente eficiente en inferencia.
+
+\paragraph{Adaptación a FatigueSet.}
+La adaptación sigue el mismo paradigma de channel independence y linear probe que \chronos{}:
+\begin{enumerate}
+    \item Los 23 canales se procesan independientemente por \timesfm{}.
+    \item El modelo genera predicciones puntuales y distribuciones de cuantiles (10 cuantiles predefinidos) por canal.
+    \item Las predicciones puntuales se concatenan como vector de 23 características y se alimentan a una regresión Ridge.
+    \item Los cuantiles se usan para calcular métricas probabilísticas (CRPS, cobertura).
+\end{enumerate}
+
+
+% ======================================================================
+\section{Implementación de la Librería \code{fatigueset.models.foundation}}
+\label{sec:implementacion_foundation}
+% ======================================================================
+
+El módulo \code{foundation.py} (924 líneas, 34.6 KB) implementa toda la lógica de adaptación de los tres modelos fundacionales. Se estructura en cinco componentes principales.
+
+\subsection{\code{MOMENTFatigueRegressor}: diseño y forward pass}
+
+La clase \code{MOMENTFatigueRegressor} hereda de \code{torch.nn.Module} y encapsula el backbone \moment{} con una cabeza de regresión personalizada.
+
+\begin{lstlisting}[caption={Paso forward de MOMENTFatigueRegressor (simplificado).}, label={lst:moment_forward}]
+class MOMENTFatigueRegressor(nn.Module):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # Transponer: (B, seq_len, n_channels) -> (B, n_channels, seq_len)
+        x_moment = x.transpose(1, 2).contiguous()
+
+        # Embeddings preentrenados (backbone congelado)
+        outputs = self._backbone.embed(x_enc=x_moment, reduction="mean")
+        pooled = outputs.embeddings  # (B, d_model)
+
+        # Cabeza de regresion entrenada
+        return self.regression_head(self.dropout_layer(pooled))
+\end{lstlisting}
+
+\paragraph{Diseño de la cabeza.} La cabeza de regresión consiste en:
+\begin{itemize}
+    \item \code{Dropout(p=0.1)}: regularización para evitar sobreajuste.
+    \item \code{Linear($d_{\text{model}}$, 2)}: proyección lineal al espacio de fatiga bidimensional, con inicialización Xavier uniforme para los pesos y ceros para los sesgos.
+\end{itemize}
+
+\paragraph{Transposición de ejes.} \moment{} espera la entrada en formato \code{(batch, n\_channels, seq\_len)}, mientras que el resto de modelos de \fatigueset{} usan \code{(batch, seq\_len, n\_channels)}. El método \code{forward} realiza la transposición internamente, garantizando la compatibilidad sin modificar el pipeline de datos.
+
+\paragraph{Carga perezosa del backbone.} El backbone se carga de forma perezosa (\textit{lazy loading}): si se proporciona un backbone pre-cargado en el constructor (parámetro \code{backbone}), se reutiliza directamente; en caso contrario, se carga automáticamente en el primer \code{forward} pass mediante \code{MOMENTPipeline.from\_pretrained}.
+
+
+\subsection{\code{ChronosZeroShotEvaluator}: sonda lineal sobre features zero-shot}
+
+La clase \code{ChronosZeroShotEvaluator} implementa la evaluación zero-shot de \chronos{} con tres métodos principales:
+
+\begin{enumerate}
+    \item \code{extract\_features(X)}: itera sobre los 23 canales, llama a \code{predict\_quantiles} de \chronos{} para cada canal, y extrae la mediana (cuantil 0.5) del siguiente paso como característica. Resultado: matriz \code{(N, 23)}.
+    \item \code{fit\_probe(X\_train, y\_train, X\_val)}: entrena una regresión Ridge ($\alpha=1.0$) sobre las 23 características extraídas y predice sobre el conjunto de validación.
+    \item \code{predict\_quantiles\_for\_crps(X)}: predice 9 cuantiles (0.1 a 0.9) por canal para el cálculo de métricas probabilísticas.
+\end{enumerate}
+
+
+\subsection{\code{TimesFMZeroShotEvaluator}: cuantiles y predicción por canal}
+
+La clase \code{TimesFMZeroShotEvaluator} sigue el mismo paradigma pero aprovecha la API nativa de \timesfm{} 2.5:
+
+\begin{lstlisting}[caption={Extracción de características con TimesFM (simplificado).}, label={lst:timesfm_extract}]
+def extract_features(self, X, batch_size=32):
+    N, seq_len, n_channels = X.shape
+    point_preds = np.zeros((N, n_channels))
+    quantile_preds = np.zeros((N, n_channels, 10))
+
+    for start in range(0, N, batch_size):
+        batch = X[start:end]
+        flat_inputs = [batch[i, :, ch]
+                       for i in range(B) for ch in range(n_channels)]
+
+        point_pred, quant_pred = self._model.forecast(
+            horizon=1, inputs=flat_inputs)
+        # Des-aplanar resultados...
+    return point_preds, quantile_preds
+\end{lstlisting}
+
+La diferencia clave con \chronos{} es que \timesfm{} genera directamente 10 cuantiles predefinidos en su salida nativa, sin necesidad de muestreo de Monte Carlo.
+
+
+\subsection{Métricas probabilísticas: CRPS y cobertura}
+
+Se implementan dos métricas probabilísticas estándar:
+
+\paragraph{CRPS (Continuous Ranked Probability Score).}
+Bajo el supuesto de distribución Normal, el CRPS se calcula analíticamente como \cite{gneiting2007scoring}:
+\[
+\text{CRPS}(\mu, \sigma, y) = \sigma \left[ z (2\Phi(z) - 1) + 2\phi(z) - \frac{1}{\sqrt{\pi}} \right], \quad z = \frac{y - \mu}{\sigma}
+\]
+donde $\Phi(\cdot)$ y $\phi(\cdot)$ son la función de distribución acumulada y la densidad de la Normal estándar, respectivamente.
+
+El CRPS generaliza el MAE al espacio probabilístico: para predicciones deterministas ($\sigma \to 0$), el CRPS degenera al MAE estándar.
+
+\paragraph{Cobertura del intervalo de predicción.}
+La cobertura empírica mide la fracción de observaciones reales que caen dentro del intervalo de predicción:
+\[
+\text{Coverage}_{1-\alpha} = \frac{1}{N} \sum_{i=1}^{N} \mathbf{1}\left[ q_{\alpha/2}^{(i)} \leq y_i \leq q_{1-\alpha/2}^{(i)} \right]
+\]
+Un intervalo de predicción del 90\% bien calibrado debería tener una cobertura empírica cercana a 0.90.
+
+
+% ======================================================================
+\section{Módulo de Optimizadores (\code{fatigueset.models.optimizers})}
+\label{sec:optimizers}
+% ======================================================================
+
+El módulo \code{optimizers.py} (477 líneas, 17.4 KB) extiende la búsqueda de hiperparámetros con Optuna al incluir la selección del \textbf{optimizador como hiperparámetro}.
+
+\subsection{Arquitectura del módulo}
+
+El módulo se estructura en cuatro componentes:
+
+\begin{enumerate}
+    \item \textbf{\code{build\_optimizer}}: Función de fábrica que instancia un optimizador de PyTorch a partir de su nombre y parámetros. Soporta Adam, AdamW, RMSprop y SGD (con momentum de Nesterov).
+
+    \item \textbf{\code{sample\_optimizer\_params}}: Define el espacio de búsqueda condicional del optimizador en Optuna. Primero se selecciona el tipo de optimizador como variable categórica, y luego se activan únicamente los hiperparámetros relevantes:
+    \begin{itemize}
+        \item \textbf{Todos}: learning rate ($10^{-5}$ a $10^{-2}$, escala log) y weight decay ($10^{-7}$ a $10^{-3}$, escala log).
+        \item \textbf{SGD solamente}: momentum (0.7 a 0.99).
+        \item \textbf{RMSprop solamente}: alpha (0.9 a 0.999).
+    \end{itemize}
+
+    \item \textbf{Funciones \code{sample\_*} por familia}: Una función de muestreo por cada familia de modelos (LSTM, GRU, CNN-LSTM, TCN, Transformer, PatchTST, xLSTM, Random Forest) que define el espacio de búsqueda completo de la arquitectura \emph{incluyendo} el optimizador.
+
+    \item \textbf{\code{sample\_model\_hyperparams}}: Función unificada que permite la búsqueda jerárquica y condicional entre familias de modelos en un único estudio de Optuna.
+\end{enumerate}
+
+\subsection{Búsqueda condicional con Optuna}
+
+La búsqueda condicional es especialmente importante para evitar sugerir hiperparámetros irrelevantes (p.~ej., momentum para Adam), lo que reduce la dimensionalidad efectiva del espacio de búsqueda y mejora la eficiencia del sampler TPE.
+
+\begin{lstlisting}[caption={Búsqueda condicional de optimizador en Optuna.}, label={lst:conditional_search}]
+def sample_optimizer_params(trial, prefix):
+    optimizer_name = trial.suggest_categorical(
+        f"{prefix}_optimizer", ["Adam", "AdamW", "RMSprop", "SGD"])
+    lr = trial.suggest_float(f"{prefix}_lr", 1e-5, 1e-2, log=True)
+    weight_decay = trial.suggest_float(
+        f"{prefix}_weight_decay", 1e-7, 1e-3, log=True)
+
+    params = {"optimizer": optimizer_name, "lr": lr,
+              "weight_decay": weight_decay}
+
+    if optimizer_name == "SGD":
+        params["momentum"] = trial.suggest_float(
+            f"{prefix}_momentum", 0.7, 0.99)
+    elif optimizer_name == "RMSprop":
+        params["alpha"] = trial.suggest_float(
+            f"{prefix}_alpha", 0.9, 0.999)
+    return params
+\end{lstlisting}
+
+\subsection{Espacios de búsqueda por familia de modelo}
+
+La Tabla~\ref{tab:search_spaces} resume los hiperparámetros buscados por Optuna para cada familia de modelo.
+
+\begin{table}[H]
+\centering
+\caption{Resumen de hiperparámetros explorados por Optuna por familia de modelo.}
+\label{tab:search_spaces}
+\small
+\begin{tabular}{@{}lp{9cm}@{}}
+\toprule
+\textbf{Familia} & \textbf{Hiperparámetros explorados} \\
+\midrule
+Random Forest & \code{n\_estimators} (50--300), \code{max\_depth}, \code{min\_samples\_split}, \code{min\_samples\_leaf}, \code{max\_features} \\
+LSTM & \code{hidden\_size} (16--256), \code{num\_layers} (1--4), \code{dropout}, \code{batch\_size}, optimizador \\
+GRU & \code{hidden\_size} (16--256), \code{num\_layers} (1--4), \code{dropout}, \code{batch\_size}, optimizador \\
+CNN-LSTM & \code{conv\_channels}, \code{kernel\_size}, \code{pool\_size}, \code{hidden\_size}, \code{num\_layers}, \code{dropout}, optimizador \\
+TCN & \code{num\_channels} (5 configuraciones), \code{kernel\_size} (2--8), \code{dropout}, optimizador \\
+Transformer & \code{d\_model} (algebraicamente divisible), \code{nhead}, \code{num\_layers}, \code{dim\_feedforward}, \code{dropout}, optimizador \\
+PatchTST & \code{patch\_len}, \code{stride}, \code{d\_model}, \code{n\_heads}, \code{num\_layers}, \code{dim\_ff}, \code{dropout}, optimizador \\
+xLSTM & \code{hidden\_size} (32--256), \code{num\_layers} (1--4), \code{dropout}, optimizador \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Restricción de divisibilidad en Transformer y PatchTST.}
+Para las arquitecturas basadas en auto-atención multi-cabeza, el parámetro $d_{\text{model}}$ debe ser divisible por el número de cabezas (\code{nhead}). En lugar de imponer esta restricción mediante pruning (descartando trials inválidos), se construye $d_{\text{model}} = \text{nhead} \times k$, donde $k$ es un multiplicador entero sugerido por Optuna. Esto garantiza la divisibilidad algebraicamente y evita desperdiciar presupuesto de búsqueda.
+
+
+% ======================================================================
+\section{Infraestructura de Computación en Servidor GPU}
+\label{sec:infraestructura}
+% ======================================================================
+
+\subsection{Arquitectura del clúster UGR}
+
+Los experimentos a escala completa se ejecutan en el clúster de computación GPU de la Universidad de Granada, con la siguiente configuración:
+
+\begin{itemize}
+    \item \textbf{Nodo cabecera}: \code{ngpu.ugr.es} --- punto de acceso SSH y gestor de colas SLURM.
+    \item \textbf{Nodo de cómputo}: \code{titan} --- equipado con GPUs NVIDIA (capacidad reportada: 11.90 GiB por GPU).
+    \item \textbf{Almacenamiento}: \code{/mnt/homeGPU/egullonl01/} --- almacenamiento persistente de 239 TB compartidos.
+    \item \textbf{Gestor de recursos}: SLURM (\textit{Simple Linux Utility for Resource Management}).
+\end{itemize}
+
+\subsection{Entorno Conda remoto}
+
+Se configuró un entorno Conda aislado en el almacenamiento GPU para evitar conflictos de dependencias:
+\begin{verbatim}
+/mnt/homeGPU/egullonl01/conda_tfg/
+\end{verbatim}
+
+Las dependencias principales instaladas incluyen: PyTorch (con CUDA), \code{momentfm}, \code{chronos-forecasting}, \code{timesfm}, \code{optuna}, \code{scikit-learn}, \code{pandas} y \code{matplotlib}.
+
+\subsection{Scripts SLURM de ejecución}
+
+Se crearon tres scripts SLURM para la ejecución automatizada de cada experimento:
+
+\begin{lstlisting}[language=bash, caption={Extracto de \code{run\_foundation\_server.sh}.}, label={lst:slurm_script}]
+#!/bin/bash
+#SBATCH --job-name Foundation_TFG
+#SBATCH --partition dios
+#SBATCH --gres=gpu:1
+#SBATCH --mem=32G
+#SBATCH --time=12:00:00
+
+eval "$(conda shell.bash hook)"
+conda activate /mnt/homeGPU/egullonl01/conda_tfg
+cd /mnt/homeGPU/egullonl01/tfg/Jupyters
+
+# Activar SERVER_MODE para modelos a escala completa
+sed -i 's/SERVER_MODE = False/SERVER_MODE = True/g' \
+    09_foundation_models.ipynb
+
+jupyter nbconvert --to notebook --execute \
+    --ExecutePreprocessor.kernel_name=python3 \
+    --inplace 09_foundation_models.ipynb
+
+# Revertir para mantener Git limpio
+sed -i 's/SERVER_MODE = True/SERVER_MODE = False/g' \
+    09_foundation_models.ipynb
+\end{lstlisting}
+
+\paragraph{Mecanismo \code{SERVER\_MODE}.}
+Todos los notebooks incluyen una variable \code{SERVER\_MODE} que controla qué variante de modelo se carga. Los scripts SLURM la cambian automáticamente a \code{True} antes de la ejecución (para cargar los modelos grandes) y la revierten a \code{False} al finalizar (para mantener un estado limpio en Git). Los tres scripts comparten la configuración: partición \code{dios}, 1 GPU, 32 GB de RAM y 12 horas máximo.
+
+\subsection{Pipeline de despliegue automático}
+
+El script \code{scratch/deploy\_server.py} automatiza la sincronización de código entre el entorno local y el servidor remoto:
+
+\begin{enumerate}
+    \item Conexión SSH al nodo cabecera (\code{ngpu.ugr.es}).
+    \item Subida de la librería completa \code{fatigueset-lib/} vía SFTP.
+    \item Subida de los notebooks y scripts SLURM.
+    \item Verificación de la integridad de los archivos transferidos.
+\end{enumerate}
+
+\subsection{Monitorización remota de jobs}
+
+Se desarrollaron múltiples scripts de monitorización bajo \code{scratch/}:
+\begin{itemize}
+    \item \code{check\_slurm\_logs.py}: consulta \code{squeue} y muestra las últimas líneas de los logs de SLURM.
+    \item \code{check\_slurm\_job\_details.py}: ejecuta \code{scontrol show job} para obtener el estado detallado.
+    \item \code{inspect\_foundation\_notebook.py}: descarga el notebook ejecutado del servidor y extrae las salidas de cada celda para diagnóstico remoto.
+    \item \code{inspect\_remote\_output.py}: lista los archivos generados en el directorio \code{output/} del servidor.
+\end{itemize}
+
+
+% ======================================================================
+\section{Resultados Experimentales}
+\label{sec:resultados}
+% ======================================================================
+
+\subsection{Tabla comparativa global}
+
+La Tabla~\ref{tab:resultados_globales} presenta los resultados de todos los modelos evaluados. Las métricas son MAE (error absoluto medio), RMSE (raíz del error cuadrático medio) y $R^2$ (coeficiente de determinación). Para los modelos fundacionales con predicciones separadas por dimensión, se reportan las dos dimensiones explícitamente.
+
+\begin{table}[H]
+\centering
+\caption{Resultados comparativos globales de todos los modelos del TFG.}
+\label{tab:resultados_globales}
+\small
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{Modelo} & \textbf{Tipo} & \textbf{MAE Medio} & \textbf{RMSE Medio} & \textbf{$R^2$ Medio} & \textbf{Params} \\
+\midrule
+\multicolumn{6}{l}{\textit{Modelos clásicos de ML (validación cruzada)}} \\
+Random Forest & Ensamble & 0.88 & 1.04 & $-$2.41 & --- \\
+KNN (k=3) & Instancias & 1.69 & 2.20 & $-$3.57 & --- \\
+Decision Tree & Árbol & 0.00 & 0.00 & 1.00$^*$ & --- \\
+\midrule
+\multicolumn{6}{l}{\textit{Modelos de Deep Learning custom (MAE/RMSE/R² promediados sobre ambas dimensiones)}} \\
+\textbf{Custom LSTM (Opt.)} & Recurrente & \textbf{16.81} & \textbf{20.14} & $-$0.60 & 55.682 \\
+\textbf{Custom CNN-LSTM (Opt.)} & Híbrido & \textbf{17.02} & \textbf{20.28} & $-$0.64 & 882.034 \\
+\textbf{Custom PatchTST (Opt.)} & Transformer & \textbf{17.26} & \textbf{20.62} & $-$0.66 & 162.882 \\
+Custom GRU (Opt.) & Recurrente & 17.47 & 20.75 & $-$0.68 & 41.794 \\
+Custom TCN (Opt.) & Convolucional & 17.68 & 21.57 & $-$0.85 & 224.962 \\
+Custom xLSTM (Opt.) & Recurrente & 17.71 & 20.87 & $-$0.71 & 287.234 \\
+Custom Transformer (Opt.) & Transformer & 18.47 & 21.31 & $-$0.88 & 139.310 \\
+Custom RNN (Baseline) & Recurrente & 30.09 & 34.93 & $-$5.07 & 1.890 \\
+\midrule
+\multicolumn{6}{l}{\textit{Modelos fundacionales (métricas por dimensión)}} \\
+\multirow{2}{*}{\textbf{\timesfm{} 2.5}} & \multirow{2}{*}{Foundation} & Fís: 16.39 & Fís: 20.15 & Fís: $-$1.10 & \multirow{2}{*}{200M$^\dagger$} \\
+& & Men: 22.38 & Men: 26.71 & Men: $-$1.43 & \\
+\multirow{2}{*}{\moment{} (large)} & \multirow{2}{*}{Foundation} & Fís: 24.64 & Fís: 28.98 & Fís: $-$3.88 & \multirow{2}{*}{2.050$^\ddagger$} \\
+& & Men: 36.68 & Men: 41.37 & Men: $-$8.07 & \\
+\bottomrule
+\end{tabular}
+\begin{flushleft}
+\footnotesize
+$^*$ Decision Tree con MAE=0 indica sobreajuste severo (memorización). \\
+$^\dagger$ Parámetros totales del backbone preentrenado (0 parámetros entrenados, linear probe externo). \\
+$^\ddagger$ Parámetros entrenables de la cabeza de regresión (backbone de 341M congelado).
+\end{flushleft}
+\end{table}
+
+
+\subsection{MOMENT: resultados por fold}
+
+La Tabla~\ref{tab:moment_folds} muestra los resultados de \moment{}-1-large con fine-tuning de la cabeza de regresión, usando 5-fold GroupKFold por participante.
+
+\begin{table}[H]
+\centering
+\caption{Resultados de MOMENT-1-large por fold (GroupKFold, 5 splits, 30 épocas).}
+\label{tab:moment_folds}
+\small
+\begin{tabular}{@{}ccccccc@{}}
+\toprule
+\textbf{Fold} & \textbf{MAE Fís.} & \textbf{RMSE Fís.} & \textbf{$R^2$ Fís.} & \textbf{MAE Men.} & \textbf{RMSE Men.} & \textbf{$R^2$ Men.} \\
+\midrule
+1 & 26.30 & 30.19 & $-$3.08 & 29.38 & 31.41 & $-$7.00 \\
+2 & 24.82 & 29.11 & $-$2.66 & 44.46 & 48.61 & $-$5.11 \\
+3 & 33.21 & 36.70 & $-$4.52 & 52.77 & 56.53 & $-$6.78 \\
+4 & 25.49 & 26.95 & $-$8.55 & 27.42 & 28.08 & $-$20.56 \\
+5 & 13.37 & 21.93 & $-$0.59 & 29.37 & 42.23 & $-$0.90 \\
+\midrule
+\textbf{Media} & \textbf{24.64} & \textbf{28.98} & \textbf{$-$3.88} & \textbf{36.68} & \textbf{41.37} & \textbf{$-$8.07} \\
+$\pm$ Std & $\pm$6.39 & $\pm$4.80 & $\pm$2.65 & $\pm$10.12 & $\pm$10.57 & $\pm$6.62 \\
+\bottomrule
+\end{tabular}
+\begin{flushleft}
+\footnotesize
+Configuración: batch size 32, learning rate $3 \times 10^{-5}$, early stopping con paciencia 10. \\
+Tiempo total de fine-tuning: 5.209,7 s ($\approx$ 87 min).
+\end{flushleft}
+\end{table}
+
+\paragraph{Observaciones.}
+\begin{itemize}
+    \item El Fold 5 muestra el mejor rendimiento ($R^2_\text{fís} = -0.59$, $R^2_\text{men} = -0.90$), sugiriendo que los participantes de validación de ese fold tienen patrones más alineados con los del entrenamiento.
+    \item El Fold 4 presenta el peor $R^2$ mental ($-20.56$), indicando una distribución de fatiga mental muy diferente en ese grupo de participantes.
+    \item La alta varianza inter-fold ($\pm$6.62 en $R^2$ mental) refleja la heterogeneidad individual inherente a \fatigueset{}.
+\end{itemize}
+
+
+\subsection{Chronos: métricas zero-shot (modelo tiny)}
+
+\begin{table}[H]
+\centering
+\caption{Métricas probabilísticas de Chronos-T5-tiny (ejecución local).}
+\label{tab:chronos_metricas}
+\small
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Métrica} & \textbf{Fatiga Física} & \textbf{Fatiga Mental} \\
+\midrule
+CRPS (media $\pm$ std) & 12.59 $\pm$ 3.98 & 17.28 $\pm$ 6.30 \\
+Cobertura 90\% & 68.4\% & 63.2\% \\
+\bottomrule
+\end{tabular}
+\begin{flushleft}
+\footnotesize
+Modelo: \code{amazon/chronos-t5-tiny} (8M parámetros). Los resultados con \code{chronos-t5-large} (710M) están pendientes (ver Sección~\ref{sec:problemas}).
+\end{flushleft}
+\end{table}
+
+
+\subsection{TimesFM: métricas puntuales y probabilísticas}
+
+\begin{table}[H]
+\centering
+\caption{Resultados de TimesFM 2.5 (200M) con zero-shot + linear probe.}
+\label{tab:timesfm_resultados}
+\small
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Métrica} & \textbf{Fatiga Física} & \textbf{Fatiga Mental} \\
+\midrule
+MAE & 16.39 & 22.38 \\
+RMSE & 20.15 & 26.71 \\
+$R^2$ & $-$1.10 & $-$1.43 \\
+\midrule
+CRPS (media $\pm$ std) & 12.53 $\pm$ 3.93 & 17.30 $\pm$ 6.35 \\
+Cobertura 90\% & 68.7\% & 62.8\% \\
+\midrule
+Parámetros entrenados & 0 (probe externo) & \\
+Tiempo total & 536.7 s & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Observaciones.}
+\begin{itemize}
+    \item \timesfm{} alcanza el mejor MAE global del proyecto (16.39 en fatiga física, 22.38 en mental), superando a los modelos de DL custom y a MOMENT.
+    \item Las métricas probabilísticas de \timesfm{} son muy similares a las de \chronos{}-tiny (CRPS física: 12.53 vs 12.59; cobertura 90\% física: 68.7\% vs 68.4\%), sugiriendo que ambos modelos producen distribuciones predictivas de calidad comparable.
+    \item La cobertura del 90\% está por debajo del nominal (68--69\% en lugar del esperado 90\%), lo que indica que los intervalos de predicción son demasiado estrechos (subconfianza).
+\end{itemize}
+
+
+\subsection{Optuna: resultados del experimento básico}
+
+El experimento básico de Optuna (sin optimizadores personalizados) se ejecutó con 3 trials y búsqueda sobre \code{hidden\_size}, \code{dropout} y \code{lr}. Los mejores hiperparámetros encontrados fueron:
+
+\begin{itemize}
+    \item \code{hidden\_size}: 64
+    \item \code{dropout}: 0.177
+    \item \code{lr}: 0.00329
+    \item Mejor MSE de validación: 1069.44
+\end{itemize}
+
+Los resultados detallados de la comparativa con los 7 modelos de DL se recogen en la Tabla~\ref{tab:resultados_globales}. El experimento extendido con optimizadores personalizados (4 familias: Adam, AdamW, RMSprop, SGD) fue cancelado por exceder el límite de 12 horas del servidor (ver Sección~\ref{sec:problemas_slurm}).
+
+
+\subsection{Discusión y análisis comparativo}
+
+Los resultados experimentales revelan varias conclusiones clave:
+
+\begin{enumerate}
+    \item \textbf{\timesfm{} es el mejor modelo del proyecto}, logrando el menor MAE (16.39/22.38) sin necesidad de entrenamiento de ningún parámetro del modelo fundacional. Esto valida la hipótesis del survey de que los modelos fundacionales pueden servir como extractores de características universales incluso en dominios no vistos durante su preentrenamiento.
+
+    \item \textbf{TCN y PatchTST son los mejores modelos custom}, con un rendimiento cercano a \timesfm{} (MAE medio $\approx$ 18). La arquitectura de TCN (convoluciones dilatadas causales) y PatchTST (segmentación en parches + auto-atención) capturan eficientemente patrones locales y globales, respectivamente.
+
+    \item \textbf{Las arquitecturas recurrentes puras (LSTM, GRU, xLSTM) tienen el peor rendimiento}, con MAE medio $\approx$ 30. Esto sugiere que la naturaleza secuencial estricta de las RNNs es inadecuada para capturar las dependencias complejas de \fatigueset{}.
+
+    \item \textbf{Los valores negativos de $R^2$} en todos los modelos indican que ninguno supera a la predicción trivial de la media. Esto se explica por la alta heterogeneidad individual del dataset (12 participantes con patrones de fatiga muy diferentes) y el pequeño tamaño muestral (660 ventanas totales).
+
+    \item \textbf{La calibración probabilística es insuficiente}: la cobertura del 90\% ronda el 63--69\% para todos los modelos probabilísticos, indicando subconfianza sistemática. Esto podría mejorarse con técnicas de calibración post-hoc (Platt scaling, isotonic regression).
+\end{enumerate}
+
+
+% ======================================================================
+\section{Problemas Técnicos y Soluciones}
+\label{sec:problemas}
+% ======================================================================
+
+\subsection{CUDA Out of Memory: diagnóstico y corrección}
+\label{sec:problemas_oom}
+
+\paragraph{Problema.}
+Al ejecutar el notebook \code{09\_foundation\_models.ipynb} en el servidor, \moment{}-1-large se entrenó correctamente en los 5 folds de validación cruzada, pero \chronos{}-large falló con el error:
+
+\begin{verbatim}
+CUDA out of memory. Tried to allocate 2.94 GiB. GPU 0 has a
+total capacity of 11.90 GiB of which 210.81 MiB is free.
+Of the allocated memory 11.50 GiB is allocated by PyTorch.
+\end{verbatim}
+
+\paragraph{Causa raíz.}
+La GPU asignada por SLURM tiene 11.90 GiB de capacidad (no 24 GiB como se esperaba inicialmente). Tras el fine-tuning de \moment{}, PyTorch retenía 11.50 GiB de tensores en la GPU. Aunque el backbone compartido se eliminó explícitamente al final de la función (\code{del backbone\_shared; gc.collect(); torch.cuda.empty\_cache()}), las activaciones intermedias del forward pass permanecían en memoria.
+
+\paragraph{Análisis técnico.}
+El problema subyacente es que en el bucle de entrenamiento:
+\begin{lstlisting}
+model.train()
+for xb, yb in train_loader:
+    pred = model(xb)      # Forward pass sin torch.no_grad()
+    loss = loss_fn(pred, yb)
+    loss.backward()
+\end{lstlisting}
+Aunque el backbone tiene \code{requires\_grad=False}, al ejecutarse en modo \code{model.train()} sin \code{torch.no\_grad()} alrededor de la llamada al backbone, PyTorch almacena las activaciones intermedias de las 24 capas Transformer para el grafo de autodiferenciación. Estas activaciones consumen varios GiB de memoria GPU.
+
+\paragraph{Solución implementada.}
+Se implementó una estrategia de \textbf{backbone compartido} para reducir el número de cargas del modelo de 5 (una por fold) a 1:
+\begin{lstlisting}[caption={Backbone compartido en finetune\_moment\_kfold.}]
+# Cargar backbone UNA sola vez
+backbone_shared = MOMENTPipeline.from_pretrained(checkpoint, ...)
+
+for fold_idx, (train_idx, val_idx) in enumerate(kf.split(...)):
+    model = MOMENTFatigueRegressor(
+        ..., backbone=backbone_shared)  # Reutilizar
+    model = model.to(device)
+    # ... entrenamiento ...
+    del model, optimizer
+    gc.collect(); torch.cuda.empty_cache()
+
+# Liberar backbone al final
+del backbone_shared
+gc.collect(); torch.cuda.empty_cache()
+\end{lstlisting}
+
+\paragraph{Soluciones finales aplicadas.}
+Se han implementado dos soluciones complementarias para resolver este problema:
+\begin{enumerate}
+    \item \textbf{Inferencia sin gradientes}: Se envolvió el paso forward del backbone congelado en un bloque \code{with torch.no\_grad():} en \code{MOMENTFatigueRegressor.forward} (cuando \code{freeze\_backbone} es \code{True}). Esto evitó de forma efectiva que PyTorch retuviera los grafos de activaciones en memoria.
+    \item \textbf{Separación de procesos secuenciales}: Dado que el distribuidor de caché de PyTorch (\textit{caching allocator}) mantiene bloques asignados para acelerar futuras peticiones y no los devuelve al driver de la GPU mientras el proceso de Python esté vivo, se dividió el notebook \code{09\_foundation\_models.ipynb} en dos notebooks independientes: \code{09\_foundation\_models\_moment.ipynb} y \code{09\_foundation\_models\_chronos.ipynb}. El script de ejecución de SLURM ejecuta ambos notebooks de forma secuencial en procesos de Python independientes. Al terminar el primer notebook, su proceso se destruye liberando por completo la memoria de la GPU, lo que permite al segundo notebook ejecutarse sobre una GPU totalmente vacía.
+\end{enumerate}
+
+\subsection{Exceso de tiempo en SLURM (Optuna)}
+\label{sec:problemas_slurm}
+
+\paragraph{Problema.}
+El Job 155622 (\code{experimento\_optuna\_optimizadores.ipynb}) fue cancelado por SLURM tras exceder las 12 horas configuradas:
+\begin{verbatim}
+slurmstepd: error: *** JOB 155622 ON titan CANCELLED AT
+2026-07-03T19:52:18 DUE TO TIME LIMIT ***
+\end{verbatim}
+
+\paragraph{Causa.}
+El espacio de búsqueda del experimento con optimizadores personalizados es significativamente más grande que el experimento básico (8 familias $\times$ 4 optimizadores $\times$ múltiples hiperparámetros condicionales). Cada trial requiere entrenar un modelo completo con validación cruzada GroupKFold (3 splits), lo que multiplica el tiempo de ejecución por 3.
+
+\paragraph{Solución propuesta.}
+Reducir el número de trials y/o las épocas de entrenamiento para que el experimento complete dentro del límite de 12 horas de SLURM, y relanzar el job.
+
+
+% ======================================================================
+\section{Conclusiones y Trabajo Futuro}
+\label{sec:conclusiones}
+% ======================================================================
+
+\subsection{Comparativa final de paradigmas}
+
+\begin{enumerate}
+    \item \textbf{Modelos fundacionales zero-shot} (\timesfm{}, \chronos{}) alcanzan resultados competitivos sin necesidad de entrenamiento específico, validando su utilidad como extractores de características universales para dominios no vistos.
+
+    \item \textbf{El fine-tuning de cabeza} (\moment{}) no mejora necesariamente sobre el zero-shot en datasets pequeños. Con solo 660 ventanas y alta variabilidad individual, el fine-tuning es vulnerable al sobreajuste a pesar del pequeño número de parámetros entrenables (2.050).
+
+    \item \textbf{Los modelos custom bien diseñados} (TCN, PatchTST) siguen siendo competitivos, especialmente cuando la arquitectura se adapta específicamente al problema (convoluciones dilatadas para señales fisiológicas, parches para capturas temporales multi-escala).
+
+    \item \textbf{La heterogeneidad individual} de \fatigueset{} representa el mayor desafío experimental, como evidencia la alta varianza inter-fold y los valores negativos de $R^2$ en todos los modelos.
+\end{enumerate}
+
+\subsection{Tareas pendientes}
+
+\begin{enumerate}
+    \item \textbf{Chronos-large}: corregir el error de memoria GPU envolviendo el forward del backbone de MOMENT en \code{torch.no\_grad()} y relanzar el experimento en el servidor.
+    \item \textbf{Optuna con optimizadores}: reducir el presupuesto de búsqueda (trials y/o épocas) y relanzar dentro del límite de 12 horas.
+    \item \textbf{Calibración probabilística}: explorar técnicas de calibración post-hoc para mejorar la cobertura de los intervalos de predicción.
+    \item \textbf{Análisis por participante}: evaluar métricas condicionadas al individuo para cuantificar la variabilidad inter-sujeto.
+\end{enumerate}
+
+
+% ======================================================================
+% BIBLIOGRAFÍA
+% ======================================================================
+
+\begin{thebibliography}{99}
+
+\bibitem{kalanadhabhatta2022fatigueset}
+Kalanadhabhatta, M., Zou, A., Rajagopalan, A., et al. (2022).
+\textit{FatigueSet: A Multi-modal Dataset for Modeling Mental and Physical Fatigue}.
+arXiv:2203.06924.
+
+\bibitem{kottapalli2025survey}
+Kottapalli, S. R. K., Hubli, K., Chandrashekhara, S., et al. (2025).
+\textit{Foundation Models for Time Series: A Survey}.
+arXiv.
+
+\bibitem{goswami2024moment}
+Goswami, M., Szafer, K., Choudhry, A., et al. (2024).
+\textit{MOMENT: A Family of Open Time-series Foundation Models}.
+International Conference on Machine Learning (ICML).
+
+\bibitem{ansari2024chronos}
+Ansari, A. F., Stella, L., Turkmen, C., et al. (2024).
+\textit{Chronos: Learning the Language of Time Series}.
+arXiv:2403.07815.
+
+\bibitem{das2024timesfm}
+Das, A., Kong, W., Leach, A., et al. (2024).
+\textit{A Decoder-only Foundation Model for Time-series Forecasting}.
+International Conference on Machine Learning (ICML).
+
+\bibitem{gneiting2007scoring}
+Gneiting, T. \& Raftery, A. E. (2007).
+\textit{Strictly Proper Scoring Rules, Prediction, and Estimation}.
+Journal of the American Statistical Association, 102(477), 359--378.
+
+\end{thebibliography}
+
+\end{document}

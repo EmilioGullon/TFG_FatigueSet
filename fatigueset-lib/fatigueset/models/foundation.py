@@ -101,6 +101,7 @@ class MOMENTFatigueRegressor(nn.Module):
         output_size: int = 2,
         freeze_backbone: bool = True,
         dropout: float = 0.1,
+        backbone: Optional[Any] = None,
     ):
         super().__init__()
         self.checkpoint = checkpoint
@@ -109,14 +110,28 @@ class MOMENTFatigueRegressor(nn.Module):
         self.output_size = output_size
         self.freeze_backbone = freeze_backbone
 
-        self._backbone = None
-        self._d_model = None
-        self._backbone_loaded = False
-
         self.dropout_layer = nn.Dropout(dropout)
-
-        # La cabeza de regresión se construirá al cargar el backbone
         self.regression_head: Optional[nn.Linear] = None
+
+        if backbone is not None:
+            self._backbone = backbone
+            self._backbone_loaded = True
+            if hasattr(self._backbone, "config") and hasattr(self._backbone.config, "d_model"):
+                self._d_model = self._backbone.config.d_model
+            elif hasattr(self._backbone, "encoder") and hasattr(self._backbone.encoder, "config"):
+                self._d_model = self._backbone.encoder.config.d_model
+            else:
+                self._d_model = getattr(self._backbone, "d_model", 768)
+            self.regression_head = nn.Linear(self._d_model, self.output_size)
+            nn.init.xavier_uniform_(self.regression_head.weight)
+            nn.init.zeros_(self.regression_head.bias)
+            if self.freeze_backbone:
+                for param in self._backbone.parameters():
+                    param.requires_grad = False
+        else:
+            self._backbone = None
+            self._d_model = None
+            self._backbone_loaded = False
 
     def _load_backbone(self) -> None:
         """
@@ -212,7 +227,12 @@ class MOMENTFatigueRegressor(nn.Module):
 
         # Obtener embeddings usando el método embed de la tubería
         # outputs.embeddings: (B, d_model)
-        outputs = self._backbone.embed(x_enc=x_moment, reduction="mean")
+        # Si el backbone está congelado, evitamos guardar activaciones en GPU usando no_grad
+        if self.freeze_backbone:
+            with torch.no_grad():
+                outputs = self._backbone.embed(x_enc=x_moment, reduction="mean")
+        else:
+            outputs = self._backbone.embed(x_enc=x_moment, reduction="mean")
         pooled = outputs.embeddings  # (B, d_model)
 
         return self.regression_head(self.dropout_layer(pooled))
@@ -623,6 +643,27 @@ def finetune_moment_kfold(
     y_tensor = torch.tensor(y, dtype=torch.float32)
     full_dataset = TensorDataset(X_tensor, y_tensor)
 
+    # Cargar backbone compartido antes del bucle de folds para evitar acumular memoria GPU y reducir tiempo de carga
+    try:
+        from momentfm import MOMENTPipeline
+    except ImportError as e:
+        raise ImportError(
+            "El paquete 'momentfm' no está instalado. Instálalo con: pip install momentfm"
+        ) from e
+
+    print(f"[MOMENT] Cargando backbone compartido desde '{checkpoint}'...")
+    t_backbone = time.time()
+    backbone_shared = MOMENTPipeline.from_pretrained(
+        checkpoint,
+        model_kwargs={
+            "task_name": "classification",
+            "n_channels": n_channels,
+            "seq_len": seq_len,
+            "num_class": 2,  # placeholder
+        }
+    )
+    print(f"[MOMENT] Backbone compartido cargado en {time.time() - t_backbone:.1f}s")
+
     for fold_idx, (train_idx, val_idx) in enumerate(
         kf.split(np.arange(len(X)), groups=groups), start=1
     ):
@@ -633,7 +674,7 @@ def finetune_moment_kfold(
         train_loader = DataLoader(train_sub, batch_size=batch_size, shuffle=True, num_workers=0)
         val_loader = DataLoader(val_sub, batch_size=batch_size, shuffle=False, num_workers=0)
 
-        # Instanciar modelo fresco por fold para evitar contaminación
+        # Instanciar modelo con el backbone compartido para evitar múltiples cargas en GPU
         model = MOMENTFatigueRegressor(
             checkpoint=checkpoint,
             n_channels=n_channels,
@@ -641,8 +682,8 @@ def finetune_moment_kfold(
             output_size=2,
             freeze_backbone=freeze_backbone,
             dropout=dropout,
+            backbone=backbone_shared,
         )
-        model.load_backbone()
         model = model.to(device)
 
         # Solo optimizar los parámetros entrenables (cabeza + capas de normalización)
@@ -732,6 +773,20 @@ def finetune_moment_kfold(
             f"MAE mental: {fold_results[-1]['mae_mental']:.4f} | "
             f"R² mental: {fold_results[-1]['r2_mental']:.4f}"
         )
+
+        # Limpiar memoria GPU explícitamente para evitar CUDA OOM
+        del model, optimizer, train_loader, val_loader
+        import gc
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+    # Eliminar el backbone compartido y liberar toda la memoria GPU de MOMENT para dar espacio a Chronos
+    del backbone_shared
+    import gc
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
 
     total_time = time.time() - t_start
     return fold_results, total_time
