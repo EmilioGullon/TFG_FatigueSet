@@ -32,10 +32,10 @@ sed -i 's/"SERVER_MODE = False"/"SERVER_MODE = True"/g' 09_foundation_models_chr
 sed -i "s/'SERVER_MODE = False'/'SERVER_MODE = True'/g" 09_foundation_models_chronos.ipynb
 sed -i 's/SERVER_MODE = False/SERVER_MODE = True/g' 09_foundation_models_chronos.ipynb
 
-# 1. Run MOMENT fine-tuning in its own python process
-echo "[Foundation Server] Starting execution of 09_foundation_models_moment.ipynb..."
-jupyter nbconvert --to notebook --execute --ExecutePreprocessor.kernel_name=python3 --inplace 09_foundation_models_moment.ipynb
-echo "[Foundation Server] Finished MOMENT execution!"
+# 1. Run MOMENT fine-tuning in its own python process (Commented out because it is already run successfully)
+# echo "[Foundation Server] Starting execution of 09_foundation_models_moment.ipynb..."
+# jupyter nbconvert --to notebook --execute --ExecutePreprocessor.kernel_name=python3 --inplace 09_foundation_models_moment.ipynb
+# echo "[Foundation Server] Finished MOMENT execution!"
 
 # 2. Run Chronos zero-shot in its own fresh python process (guarantees clean GPU memory)
 echo "[Foundation Server] Starting execution of 09_foundation_models_chronos.ipynb..."

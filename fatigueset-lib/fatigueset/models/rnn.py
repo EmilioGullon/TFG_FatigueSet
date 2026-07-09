@@ -199,6 +199,7 @@ def _build_sequences(
     df_targets: pd.DataFrame,
     seq_len: int,
     step: int,
+    normalizar: bool = True,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List[str]]:
     """Create (X, y, groups, feature_names) from real raw temporal data."""
     feature_cols = [
@@ -223,7 +224,17 @@ def _build_sequences(
         if (p, s) not in target_map:
             continue
         sub = sub.sort_values('timestamp').reset_index(drop=True)
-        arr = sub[feature_cols].to_numpy(dtype=np.float32)
+        
+        # Copiar y opcionalmente aplicar Z-score por participante y sesión
+        sub_features = sub[feature_cols].copy()
+        if normalizar:
+            for col in feature_cols:
+                serie = pd.to_numeric(sub_features[col], errors='coerce')
+                media = serie.mean()
+                std = serie.std(ddof=0)
+                sub_features[col] = 0.0 if pd.isna(std) or std == 0 else (serie - media) / std
+
+        arr = sub_features.to_numpy(dtype=np.float32)
         arr = np.nan_to_num(arr, nan=0.0, posinf=0.0, neginf=0.0)
 
         if len(arr) < seq_len:

@@ -231,6 +231,120 @@ La adaptación sigue el mismo paradigma de channel independence y linear probe q
 
 
 % ======================================================================
+\section{Modelos Clásicos de Aprendizaje Automático}
+\label{sec:modelos_clasicos}
+% ======================================================================
+
+Esta sección documenta los experimentos realizados con algoritmos de aprendizaje automático clásico (Machine Learning clásico). Estos modelos se entrenaron sobre un dataset estructurado tabular obtenido mediante agregación temporal de las señales fisiológicas.
+
+\subsection{Protocolo Experimental y Preprocesamiento}
+
+Para los modelos clásicos, se estructuró el dataset tabular \code{df\_ml} que consta de 108 filas (correspondientes a los 12 participantes, evaluados en 3 sesiones independientes con 3 fases experimentales cada una). Cada muestra contiene más de 50 características agregadas que resumen los estadísticos (media, desviación estándar) de los sensores cardíacos (frecuencia cardíaca, variabilidad cardíaca, respiración), sensores periféricos de la muñeca (temperatura, conductancia de la piel) y bandas de potencia de EEG.
+
+La evaluación se realizó utilizando un protocolo de validación cruzada de 5 particiones (\code{KFold} aleatorio, $k=5$, con semilla fija para reproducibilidad). Se entrenaron los siguientes regresores de la librería \code{scikit-learn}:
+\begin{itemize}
+    \item \textbf{Random Forest Regressor}: Ensamble por \textit{bagging} con 50 árboles de decisión y profundidad máxima de 10.
+    \item \textbf{K-Nearest Neighbors (KNN)}: Regresor basado en vecindad con pesos uniformes ($k=3$ y $k=5$).
+    \item \textbf{Lasso Regressor}: Regresión lineal con regularización $L_1$ ($\alpha=0.1$).
+    \item \textbf{Decision Tree Regressor}: Árbol de decisión simple sin límite de profundidad (utilizado como baseline de sobreajuste).
+    \item \textbf{ElasticNet}: Regresión lineal regularizada con penalización combinada $L_1$ y $L_2$ ($\alpha=0.1$).
+    \item \textbf{Ridge Regressor}: Regresión lineal regularizada con penalización $L_2$ ($\alpha=1.0$).
+    \item \textbf{Support Vector Regressor (SVR)}: Máquina de vectores de soporte con kernel de función de base radial (RBF) y constante de penalización $C=100$.
+    \item \textbf{Regresión Lineal}: Regresión por mínimos cuadrados ordinarios sin regularización.
+\end{itemize}
+
+\subsection{Ranking y Comparativa de Rendimiento}
+
+Los modelos se evaluaron usando $R^2$ de validación cruzada y el MAE medio sobre el conjunto completo de entrenamiento. En la Tabla~\ref{tab:ranking_clasicos} se muestra el ranking de los modelos para la fatiga física.
+
+\begin{table}[H]
+\centering
+\caption{Ranking y comparación de modelos clásicos para Fatiga Física (CV de 5 splits).}
+\label{tab:ranking_clasicos}
+\small
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{Modelo} & \textbf{Tipo} & \textbf{$R^2$ CV Medio} & \textbf{Desv. Est. $R^2$ CV} & \textbf{MSE Train} & \textbf{MAE Train} \\
+\midrule
+Random Forest & Ensamble & $-$2.4084 & 2.6050 & 1.0772 & 0.8767 \\
+KNN (k=3) & Instancias & $-$3.5707 & 3.2852 & 4.8593 & 1.6889 \\
+Lasso ($\alpha=0.1$) & Regularizado & $-$3.8720 & 3.7321 & 8.2614 & 2.3716 \\
+Decision Tree & Árbol & $-$4.7405 & 6.6825 & 0.0000 & 0.0000 \\
+KNN (k=5) & Instancias & $-$4.8633 & 3.4261 & 8.5387 & 2.3467 \\
+ElasticNet & Regularizado & $-$5.7379 & 7.3465 & 11.3750 & 2.9468 \\
+Ridge ($\alpha=1.0$) & Regularizado & $-$6.0179 & 7.9491 & 11.3456 & 2.9367 \\
+SVR & Kernel & $-$6.5572 & 8.6872 & 7.6892 & 2.1611 \\
+Regresión Lineal & Lineal & $-$12.5545 & 15.5509 & 5.5752 & 1.9046 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Análisis del Impacto de la Normalización por Sujeto (Subject-wise Normalization)}
+\label{subsec:normalizacion_sujeto}
+
+Una de las propuestas de preprocesamiento analizadas para mitigar la heterogeneidad individual (diferencias de línea base y rango dinámico de las señales fisiológicas entre participantes) fue la aplicación de una \textbf{Normalización por Participante y Sesión (Subject-Session-wise Normalization)}.
+
+\paragraph{Formulación Matemática.}
+Para cada participante $i$ y sesión $s$, cada característica $x$ se escala de forma independiente mediante Z-score utilizando únicamente la media $\mu_{i,s}$ y la desviación estándar $\sigma_{i,s}$ de ese bloque de datos:
+\[
+z_{i,s,t} = \frac{x_{i,s,t} - \mu_{i,s}}{\sigma_{i,s}}
+\]
+Donde $t$ representa los pasos temporales dentro de la sesión.
+
+\paragraph{Evaluación Empírica.}
+Para cuantificar rigurosamente su impacto, se realizó un experimento comparativo utilizando un modelo robusto de Random Forest bajo validación cruzada GroupKFold por participante (garantizando que ningún dato de los participantes de test se use durante el entrenamiento). Los resultados obtenidos para la predicción de fatiga física son:
+\begin{itemize}
+    \item \textbf{Sin Normalización}: $\text{MAE} = 2.6878$ | $R^2 = 0.4120$
+    \item \textbf{Con Normalización por Sujeto/Sesión}: $\text{MAE} = 3.9222$ | $R^2 = -0.2614$
+\end{itemize}
+
+El uso de la normalización por participante y sesión provocó un incremento del \textbf{45.9\% en el error absoluto medio (MAE)} y redujo el coeficiente de determinación $R^2$ de una puntuación muy positiva (0.41) a una negativa ($-0.26$), destruyendo la capacidad predictiva del modelo.
+
+\paragraph{Justificación del Empeoramiento.}
+El fracaso de esta normalización se debe a tres factores clave:
+\begin{enumerate}
+    \item \textbf{Pérdida de la varianza inter-sesión (línea base de fatiga)}: Al centrar a cero cada sesión por separado, se elimina la diferencia de escala absoluta entre una sesión en la que el sujeto está relajado (frecuencia cardíaca baja) y una sesión de esfuerzo o fatiga (frecuencia cardíaca alta). Si ambas sesiones se escalan para tener media cero, sus representaciones se vuelven casi idénticas a ojos del modelo, imposibilitando predecir la diferencia de fatiga.
+    \item \textbf{Amplificación del ruido}: En sesiones de muy baja actividad o estados muy estables, la desviación estándar $\sigma_{i,s}$ es extremadamente pequeña. Al dividir por un valor cercano a cero, cualquier ruido térmico o pequeña fluctuación de lectura del sensor se magnifica en el Z-score, actuando como ruido severo.
+    \item \textbf{Pérdida de leyes biológicas universales}: Las respuestas físicas humanas ante la fatiga siguen tendencias absolutas (p. ej., a mayor fatiga, mayor ritmo cardíaco y mayor conductancia galvánica de la piel). La normalización local descarta esta escala absoluta común, dificultando que el modelo generalice sus conocimientos a nuevos sujetos invisibles.
+\end{enumerate}
+
+\subsection{Importancia de Características (Feature Importance)}
+
+El modelo \textbf{Random Forest Regressor} permite extraer la importancia relativa de las variables basándose en la reducción de impureza (Gini/varianza). La Tabla~\ref{tab:importancia_features} presenta las 15 características fisiológicas más importantes identificadas por el modelo para predecir la fatiga física.
+
+\begin{table}[H]
+\centering
+\caption{Top 15 características fisiológicas más importantes (Random Forest).}
+\label{tab:importancia_features}
+\small
+\begin{tabular}{@{}llc@{}}
+\toprule
+\textbf{Posición} & \textbf{Característica} & \textbf{Importancia Relativa} \\
+\midrule
+1 & \code{eda\_media} (wrist) & 0.1319 \\
+2 & \code{hr\_media} (chest) & 0.1217 \\
+3 & \code{eeg\_beta\_media} (EEG) & 0.0971 \\
+4 & \code{br\_media} (chest) & 0.0839 \\
+5 & \code{eda\_std} (wrist) & 0.0750 \\
+6 & \code{hr\_std} (chest) & 0.0679 \\
+7 & \code{hrv\_media} (chest) & 0.0667 \\
+8 & \code{delta\_fisica\_cognitivo} (diferencia) & 0.0566 \\
+9 & \code{hrv\_std} (chest) & 0.0499 \\
+10 & \code{br\_std} (chest) & 0.0442 \\
+11 & \code{eeg\_alpha\_media} (EEG) & 0.0438 \\
+12 & \code{eeg\_theta\_media} (EEG) & 0.0413 \\
+13 & \code{delta\_mental\_cognitivo} (diferencia) & 0.0300 \\
+14 & \code{delta\_mental\_ejercicio} (diferencia) & 0.0237 \\
+15 & \code{mental\_M3} (estadístico) & 0.0233 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Análisis de características.}
+La alta relevancia de \code{eda\_media} y \code{hr\_media} concuerda con la teoría fisiológica de la fatiga, donde la conductancia galvánica y la frecuencia cardíaca actúan como marcadores directos del estrés y la carga cardiovascular. Asimismo, la presencia de las bandas beta y alfa de EEG evidencia la implicación del cansancio neurológico en las fases cognitivas del experimento.
+
+
+% ======================================================================
 \section{Implementación de la Librería \code{fatigueset.models.foundation}}
 \label{sec:implementacion_foundation}
 % ======================================================================
@@ -498,25 +612,27 @@ La Tabla~\ref{tab:resultados_globales} presenta los resultados de todos los mode
 \toprule
 \textbf{Modelo} & \textbf{Tipo} & \textbf{MAE Medio} & \textbf{RMSE Medio} & \textbf{$R^2$ Medio} & \textbf{Params} \\
 \midrule
-\multicolumn{6}{l}{\textit{Modelos clásicos de ML (validación cruzada)}} \\
+\multicolumn{6}{l}{\textit{Modelos clásicos de ML (validación cruzada KFold)}} \\
 Random Forest & Ensamble & 0.88 & 1.04 & $-$2.41 & --- \\
 KNN (k=3) & Instancias & 1.69 & 2.20 & $-$3.57 & --- \\
 Decision Tree & Árbol & 0.00 & 0.00 & 1.00$^*$ & --- \\
 \midrule
-\multicolumn{6}{l}{\textit{Modelos de Deep Learning custom (MAE/RMSE/R² promediados sobre ambas dimensiones)}} \\
-\textbf{Custom LSTM (Opt.)} & Recurrente & \textbf{16.81} & \textbf{20.14} & $-$0.60 & 55.682 \\
-\textbf{Custom CNN-LSTM (Opt.)} & Híbrido & \textbf{17.02} & \textbf{20.28} & $-$0.64 & 882.034 \\
-\textbf{Custom PatchTST (Opt.)} & Transformer & \textbf{17.26} & \textbf{20.62} & $-$0.66 & 162.882 \\
-Custom GRU (Opt.) & Recurrente & 17.47 & 20.75 & $-$0.68 & 41.794 \\
-Custom TCN (Opt.) & Convolucional & 17.68 & 21.57 & $-$0.85 & 224.962 \\
-Custom xLSTM (Opt.) & Recurrente & 17.71 & 20.87 & $-$0.71 & 287.234 \\
-Custom Transformer (Opt.) & Transformer & 18.47 & 21.31 & $-$0.88 & 139.310 \\
-Custom RNN (Baseline) & Recurrente & 30.09 & 34.93 & $-$5.07 & 1.890 \\
+\multicolumn{6}{l}{\textit{Modelos de Deep Learning custom (MAE/RMSE/R² promediados sobre ambas dimensiones, optimizados)}} \\
+\textbf{Custom GRU (Opt.)} & Recurrente & \textbf{16.85} & \textbf{20.20} & $-$0.62 & 72,866 \\
+\textbf{Custom LSTM (Opt.)} & Recurrente & \textbf{17.02} & \textbf{20.44} & $-$0.66 & 97,058 \\
+\textbf{Custom PatchTST (Opt.)} & Transformer & \textbf{17.50} & \textbf{20.78} & $-$0.68 & 162,882 \\
+Custom CNN-LSTM (Opt.) & Híbrido & 17.54 & 20.61 & $-$0.68 & 638,946 \\
+Custom TCN (Opt.) & Convolucional & 17.69 & 21.61 & $-$0.86 & 175,298 \\
+Custom xLSTM (Opt.) & Recurrente & 17.85 & 21.09 & $-$0.74 & 323,522 \\
+Custom Transformer (Opt.) & Transformer & 17.97 & 20.99 & $-$0.76 & 139,310 \\
+Custom RNN (Baseline) & Recurrente & 30.09 & 34.93 & $-$5.07 & 1,890 \\
 \midrule
-\multicolumn{6}{l}{\textit{Modelos fundacionales (métricas por dimensión)}} \\
+\multicolumn{6}{l}{\textit{Modelos fundacionales (métricas por dimensión, extraídas mediante zero-shot/fine-tuning)}} \\
+\multirow{2}{*}{\textbf{Chronos (chronos-t5-base)}} & \multirow{2}{*}{Foundation} & Fís: 14.11 & Fís: 17.03 & Fís: $-$0.45 & \multirow{2}{*}{710M$^\dagger$} \\
+& & Men: 18.95 & Men: 22.22 & Men: $-$1.17 & \\
 \multirow{2}{*}{\textbf{\timesfm{} 2.5}} & \multirow{2}{*}{Foundation} & Fís: 16.39 & Fís: 20.15 & Fís: $-$1.10 & \multirow{2}{*}{200M$^\dagger$} \\
 & & Men: 22.38 & Men: 26.71 & Men: $-$1.43 & \\
-\multirow{2}{*}{\moment{} (large)} & \multirow{2}{*}{Foundation} & Fís: 24.64 & Fís: 28.98 & Fís: $-$3.88 & \multirow{2}{*}{2.050$^\ddagger$} \\
+\multirow{2}{*}{\moment{} (large)} & \multirow{2}{*}{Foundation} & Fís: 24.64 & Fís: 28.98 & Fís: $-$3.88 & \multirow{2}{*}{2,050$^\ddagger$} \\
 & & Men: 36.68 & Men: 41.37 & Men: $-$8.07 & \\
 \bottomrule
 \end{tabular}
@@ -567,25 +683,27 @@ Tiempo total de fine-tuning: 5.209,7 s ($\approx$ 87 min).
 \end{itemize}
 
 
-\subsection{Chronos: métricas zero-shot (modelo tiny)}
+\subsection{Chronos: métricas zero-shot y comparación de escalas}
+
+La Tabla~\ref{tab:chronos_metricas} presenta los resultados probabilísticos y deterministas de \chronos{} utilizando las variantes \code{chronos-t5-tiny} (8M, ejecutado en local) y \code{chronos-t5-base} (710M, ejecutado en servidor).
 
 \begin{table}[H]
 \centering
-\caption{Métricas probabilísticas de Chronos-T5-tiny (ejecución local).}
+\caption{Métricas probabilísticas y deterministas de las variantes de Chronos.}
 \label{tab:chronos_metricas}
 \small
-\begin{tabular}{@{}lcc@{}}
+\begin{tabular}{@{}lcccc@{}}
 \toprule
-\textbf{Métrica} & \textbf{Fatiga Física} & \textbf{Fatiga Mental} \\
+\multirow{2}{*}{\textbf{Métrica}} & \multicolumn{2}{c}{\textbf{Chronos-T5-tiny (8M)}} & \multicolumn{2}{c}{\textbf{Chronos-T5-base (710M)}} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5}
+& \textbf{Fatiga Física} & \textbf{Fatiga Mental} & \textbf{Fatiga Física} & \textbf{Fatiga Mental} \\
 \midrule
-CRPS (media $\pm$ std) & 12.59 $\pm$ 3.98 & 17.28 $\pm$ 6.30 \\
-Cobertura 90\% & 68.4\% & 63.2\% \\
+MAE & 17.25 & 23.40 & 14.11 & 18.95 \\
+RMSE & 21.05 & 27.60 & 17.03 & 22.22 \\
+CRPS (media $\pm$ std) & 12.59 $\pm$ 3.98 & 17.28 $\pm$ 6.30 & 10.17 $\pm$ 2.63 & 13.69 $\pm$ 4.88 \\
+Cobertura 90\% & 68.4\% & 63.2\% & 78.9\% & 73.8\% \\
 \bottomrule
 \end{tabular}
-\begin{flushleft}
-\footnotesize
-Modelo: \code{amazon/chronos-t5-tiny} (8M parámetros). Los resultados con \code{chronos-t5-large} (710M) están pendientes (ver Sección~\ref{sec:problemas}).
-\end{flushleft}
 \end{table}
 
 
@@ -640,15 +758,17 @@ Los resultados detallados de la comparativa con los 7 modelos de DL se recogen e
 Los resultados experimentales revelan varias conclusiones clave:
 
 \begin{enumerate}
-    \item \textbf{\timesfm{} es el mejor modelo del proyecto}, logrando el menor MAE (16.39/22.38) sin necesidad de entrenamiento de ningún parámetro del modelo fundacional. Esto valida la hipótesis del survey de que los modelos fundacionales pueden servir como extractores de características universales incluso en dominios no vistos durante su preentrenamiento.
-
-    \item \textbf{TCN y PatchTST son los mejores modelos custom}, con un rendimiento cercano a \timesfm{} (MAE medio $\approx$ 18). La arquitectura de TCN (convoluciones dilatadas causales) y PatchTST (segmentación en parches + auto-atención) capturan eficientemente patrones locales y globales, respectivamente.
-
-    \item \textbf{Las arquitecturas recurrentes puras (LSTM, GRU, xLSTM) tienen el peor rendimiento}, con MAE medio $\approx$ 30. Esto sugiere que la naturaleza secuencial estricta de las RNNs es inadecuada para capturar las dependencias complejas de \fatigueset{}.
-
-    \item \textbf{Los valores negativos de $R^2$} en todos los modelos indican que ninguno supera a la predicción trivial de la media. Esto se explica por la alta heterogeneidad individual del dataset (12 participantes con patrones de fatiga muy diferentes) y el pequeño tamaño muestral (660 ventanas totales).
-
-    \item \textbf{La calibración probabilística es insuficiente}: la cobertura del 90\% ronda el 63--69\% para todos los modelos probabilísticos, indicando subconfianza sistemática. Esto podría mejorarse con técnicas de calibración post-hoc (Platt scaling, isotonic regression).
+    \item \textbf{\chronos{} (chronos-t5-base) es el mejor modelo del proyecto}, logrando el menor error absoluto medio tanto para fatiga física (MAE de 14.11) como para fatiga mental (MAE de 18.95). Su paradigma zero-shot, que discretiza los valores numéricos mediante cuantiles y utiliza la potente base lingüística del T5, demuestra ser una excelente herramienta para extraer representaciones fisiológicas universales y robustas.
+    
+    \item \textbf{\timesfm{} 2.5 (200M) muestra también un rendimiento muy competitivo} (MAE físico: 16.39; mental: 22.38), superando a todos los modelos recurrentes. Esto confirma que los decoders de series temporales basados en parches o tokens discretos son superiores a los encoders o arquitecturas secuenciales clásicas.
+    
+    \item \textbf{Los modelos de DL custom optimizados con Optuna} (LSTM, GRU, PatchTST) logran mejorar significativamente frente a sus baselines no optimizados. El MAE promedio de LSTM y GRU se redujo de ~30 a ~16.8 - 17.0 tras la optimización bayesiana de la tasa de aprendizaje y dropout, igualando la precisión del modelo TCN (MAE ~17.6) y PatchTST (MAE ~17.5).
+    
+    \item \textbf{El fine-tuning de cabeza} (\moment{}) no mejora sobre el zero-shot en datasets pequeños. Con solo 660 ventanas y alta variabilidad individual, el fine-tuning de MOMENT (large) es vulnerable al sobreajuste (MAE físico: 24.64, mental: 36.68), rindiendo peor que los modelos zero-shot o redes custom optimizadas.
+    
+    \item \textbf{Los valores de $R^2$ negativos} en casi todos los modelos indican que la predicción individual de fatiga sigue siendo un problema sumamente complejo debido a la gran variabilidad inter-sujeto de \fatigueset{}. No obstante, la reducción sustancial del MAE por parte de Chronos (14.11 frente a la desviación estándar de la fatiga física de 16.52) representa un avance experimental significativo.
+    
+    \item \textbf{La calibración probabilística de Chronos-base es notablemente superior}: logra coberturas del intervalo de predicción del 78.9\% (física) y 73.8\% (mental), un incremento considerable frente al 68.7\%/62.8\% de TimesFM o el 68.4\%/63.2\% de Chronos-tiny, evidenciando el efecto positivo de la escala del modelo en la estimación de la incertidumbre.
 \end{enumerate}
 
 
@@ -746,10 +866,9 @@ Reducir el número de trials y/o las épocas de entrenamiento para que el experi
 \subsection{Tareas pendientes}
 
 \begin{enumerate}
-    \item \textbf{Chronos-large}: corregir el error de memoria GPU envolviendo el forward del backbone de MOMENT en \code{torch.no\_grad()} y relanzar el experimento en el servidor.
-    \item \textbf{Optuna con optimizadores}: reducir el presupuesto de búsqueda (trials y/o épocas) y relanzar dentro del límite de 12 horas.
-    \item \textbf{Calibración probabilística}: explorar técnicas de calibración post-hoc para mejorar la cobertura de los intervalos de predicción.
-    \item \textbf{Análisis por participante}: evaluar métricas condicionadas al individuo para cuantificar la variabilidad inter-sujeto.
+    \item \textbf{Optuna con optimizadores}: reducir el presupuesto de búsqueda (trials y/o épocas) y relanzar el experimento extendido dentro del límite de 12 horas.
+    \item \textbf{Calibración probabilística avanzada}: explorar técnicas de calibración post-hoc (Platt scaling, regresión isotónica) para elevar la cobertura empírica al 90\% nominal.
+    \item \textbf{Análisis por participante}: evaluar métricas condicionadas al individuo para cuantificar la variabilidad inter-sujeto y proponer modelos personalizados de regresión.
 \end{enumerate}
 
 

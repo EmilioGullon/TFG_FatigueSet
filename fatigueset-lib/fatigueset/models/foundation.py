@@ -309,11 +309,11 @@ class ChronosZeroShotEvaluator:
         self._pipeline = ChronosPipeline.from_pretrained(
             self.checkpoint,
             device_map=self.device,
-            torch_dtype=torch.float32,
+            torch_dtype=torch.float16,
         )
         print(f"[Chronos] Pipeline cargado en {time.time() - t0:.1f}s")
 
-    def extract_features(self, X: np.ndarray, batch_size: int = 32) -> np.ndarray:
+    def extract_features(self, X: np.ndarray, batch_size: int = 4) -> np.ndarray:
         """
         Extrae características de cada muestra usando Chronos como codificador.
 
@@ -338,35 +338,36 @@ class ChronosZeroShotEvaluator:
         N, seq_len, n_channels = X.shape
         features = np.zeros((N, n_channels), dtype=np.float32)
 
-        for start in range(0, N, batch_size):
-            end = min(start + batch_size, N)
-            batch = X[start:end]  # (B, seq_len, n_channels)
+        with torch.no_grad():
+            for start in range(0, N, batch_size):
+                end = min(start + batch_size, N)
+                batch = X[start:end]  # (B, seq_len, n_channels)
 
-            batch_features = np.zeros((end - start, n_channels), dtype=np.float32)
+                batch_features = np.zeros((end - start, n_channels), dtype=np.float32)
 
-            for ch in range(n_channels):
-                # Extraer el canal ch para todas las muestras del batch
-                channel_series = [
-                    torch.tensor(batch[i, :, ch], dtype=torch.float32)
-                    for i in range(end - start)
-                ]
+                for ch in range(n_channels):
+                    # Extraer el canal ch para todas las muestras del batch
+                    channel_series = [
+                        torch.tensor(batch[i, :, ch], dtype=torch.float32)
+                        for i in range(end - start)
+                    ]
 
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    # Chronos predice distribución del siguiente punto
-                    quantiles, mean = self._pipeline.predict_quantiles(
-                        inputs=channel_series,
-                        prediction_length=self.prediction_length,
-                        quantile_levels=[0.1, 0.5, 0.9],
-                        num_samples=self.num_samples,
-                    )
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        # Chronos predice distribución del siguiente punto
+                        quantiles, mean = self._pipeline.predict_quantiles(
+                            inputs=channel_series,
+                            prediction_length=self.prediction_length,
+                            quantile_levels=[0.1, 0.5, 0.9],
+                            num_samples=self.num_samples,
+                        )
 
-                # Mediana (quantil 0.5) del siguiente paso como feature
-                # quantiles: (B, prediction_length, 3)
-                median_pred = quantiles[:, 0, 1].numpy()  # (B,)
-                batch_features[:, ch] = median_pred
+                    # Mediana (quantil 0.5) del siguiente paso como feature
+                    # quantiles: (B, prediction_length, 3)
+                    median_pred = quantiles[:, 0, 1].numpy()  # (B,)
+                    batch_features[:, ch] = median_pred
 
-            features[start:end] = batch_features
+                features[start:end] = batch_features
 
         return features
 
@@ -408,6 +409,7 @@ class ChronosZeroShotEvaluator:
         self,
         X: np.ndarray,
         quantile_levels: Optional[List[float]] = None,
+        batch_size: int = 4,
     ) -> np.ndarray:
         """
         Predice cuantiles de la distribución predictiva de Chronos para el cálculo
@@ -419,6 +421,8 @@ class ChronosZeroShotEvaluator:
             Array de secuencias, forma ``(N, seq_len, n_channels)``.
         quantile_levels : list of float, opcional
             Cuantiles a predecir. Default: [0.1, 0.2, ..., 0.9].
+        batch_size : int
+            Número de secuencias procesadas simultáneamente. Default: 4.
 
         Retorna
         -------
@@ -433,20 +437,25 @@ class ChronosZeroShotEvaluator:
         N, seq_len, n_channels = X.shape
         all_quantiles = np.zeros((N, len(quantile_levels), n_channels), dtype=np.float32)
 
-        for ch in range(n_channels):
-            channel_series = [
-                torch.tensor(X[i, :, ch], dtype=torch.float32) for i in range(N)
-            ]
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                quantiles, _ = self._pipeline.predict_quantiles(
-                    inputs=channel_series,
-                    prediction_length=self.prediction_length,
-                    quantile_levels=quantile_levels,
-                    num_samples=self.num_samples,
-                )
-            # quantiles: (N, prediction_length, n_quantiles)
-            all_quantiles[:, :, ch] = quantiles[:, 0, :].numpy()
+        with torch.no_grad():
+            for start in range(0, N, batch_size):
+                end = min(start + batch_size, N)
+                batch = X[start:end]
+
+                for ch in range(n_channels):
+                    channel_series = [
+                        torch.tensor(batch[i, :, ch], dtype=torch.float32) for i in range(end - start)
+                    ]
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        quantiles, _ = self._pipeline.predict_quantiles(
+                            inputs=channel_series,
+                            prediction_length=self.prediction_length,
+                            quantile_levels=quantile_levels,
+                            num_samples=self.num_samples,
+                        )
+                    # quantiles: (B_batch, prediction_length, n_quantiles)
+                    all_quantiles[start:end, :, ch] = quantiles[:, 0, :].numpy()
 
         return all_quantiles
 
