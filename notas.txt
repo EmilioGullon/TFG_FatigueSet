@@ -1,4 +1,0 @@
-1. Tendría que hacer un jupiter para saber como tratar los datos
-2. De este jupiter derviar una función que carge y compruebe si están bien los datos
-3. Empezar con series temporales, empezar a sacar gráficas de todos los datos. Si poseen 
-tendencia o estacionalidad. formato y espacio del tiempo si tienen picos... etc
