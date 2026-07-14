@@ -345,6 +345,100 @@ La alta relevancia de \code{eda\_media} y \code{hr\_media} concuerda con la teor
 
 
 % ======================================================================
+\section{Modelos de Deep Learning Diseñados a Medida}
+\label{sec:modelos_deep_learning}
+% ======================================================================
+
+En esta fase del proyecto, para modelar la dinámica temporal compleja de las señales fisiológicas multicanal, se diseñaron e implementaron en PyTorch siete arquitecturas de Deep Learning a medida. Estas redes se entrenaron utilizando secuencias multivariadas de timesteps correspondientes a ventanas temporales del dataset, mapeando la entrada de forma bidimensional hacia las etiquetas continuas de fatiga física y mental.
+
+\subsection{Resumen de Arquitecturas Diseñadas}
+
+Las arquitecturas propuestas abarcan un amplio espectro de paradigmas de procesamiento temporal:
+\begin{itemize}
+    \item \textbf{Custom LSTM y GRU}: Modelos recurrentes estándar para capturar dependencias secuenciales a largo plazo.
+    \item \textbf{Custom CNN-LSTM}: Modelo híbrido que combina capas convolucionales 1D para la extracción de características espaciales locales y capas recurrentes LSTM para capturar la evolución temporal.
+    \item \textbf{Custom TCN (Temporal Convolutional Networks)}: Arquitectura convolucional que emplea convoluciones causales y dilatadas junto con conexiones residuales, ofreciendo un campo receptivo amplio y evitando el desvanecimiento del gradiente sin la necesidad de recurrencia.
+    \item \textbf{Custom Transformer}: Modelo basado en auto-atención multi-cabeza y codificación posicional para capturar relaciones globales sin restricciones secuenciales.
+    \item \textbf{Custom PatchTST}: Adaptación de la arquitectura de Transformer que opera sobre parches o segmentos locales en lugar de timesteps individuales, e implementa independencia de canales (\emph{channel independence}).
+    \item \textbf{Custom xLSTM (sLSTM)}: Red recurrente avanzada basada en el reciente paradigma xLSTM, implementada de forma manual para sortear las limitaciones de las compuertas sigmoideas tradicionales.
+\end{itemize}
+
+\subsection{Extended Long Short-Term Memory (xLSTM / sLSTM)}
+\label{subsec:xlstm_theory}
+
+El modelo \textbf{xLSTM} (Extended Long Short-Term Memory) \cite{beck2024xlstm} introduce mejoras fundamentales sobre la LSTM clásica mediante el uso de compuertas exponenciales y mecanismos de estabilización numérica. En este trabajo, ante la ausencia de una implementación oficial compatible en la librería estándar de PyTorch, se desarrolló manualmente una variante \textbf{sLSTM} (Stabilized LSTM) en el módulo \code{xlstm.py}.
+
+\subsubsection{Formulación Matemática de la Celda sLSTM}
+
+A diferencia de la LSTM clásica, que utiliza funciones sigmoideas para las compuertas de entrada y olvido (limitando su rango a $(0, 1)$), la variante sLSTM emplea funciones exponenciales para permitir que la red actualice sus estados con mayor flexibilidad. Sin embargo, el uso directo de exponenciales conlleva riesgos de desbordamiento numérico (\emph{overflow}). Para resolver esto, sLSTM introduce un estado estabilizador $m_t$ y un normalizador $n_t$.
+
+Las ecuaciones que describen el paso hacia adelante (\emph{forward pass}) para un paso temporal $t$ en la celda sLSTM son:
+
+\begin{enumerate}
+    \item \textbf{Pre-activaciones lineales}:
+    \begin{align}
+        \tilde{f}_t &= x_t W_f^T + h_{t-1} U_f^T + b_f \\
+        \tilde{i}_t &= x_t W_i^T + h_{t-1} U_i^T + b_i \\
+        \tilde{c}_t &= \tanh(x_t W_c^T + h_{t-1} U_c^T + b_c) \\
+        \tilde{o}_t &= x_t W_o^T + h_{t-1} U_o^T + b_o
+    \end{align}
+    Donde $\tilde{f}_t$, $\tilde{i}_t$, $\tilde{c}_t$ y $\tilde{o}_t$ son las pre-activaciones de la compuerta de olvido, compuerta de entrada, candidato de celda y compuerta de salida, respectivamente. Los pesos $W_*$ y $U_*$ y sesgos $b_*$ son parámetros aprendidos.
+
+    \item \textbf{Estabilización en escala logarítmica}:
+    Para evitar el desbordamiento numérico al calcular los exponenciales de las compuertas, se calcula un término de escala $m_t$ que mantiene el exponente máximo observado:
+    \begin{equation}
+        m_t = \max(m_{t-1} + \tilde{f}_t, \tilde{i}_t)
+    \end{equation}
+    Con una condición de inicialización $m_0 = 0$.
+
+    \item \textbf{Compuertas Exponenciales Estabilizadas}:
+    Las compuertas de olvido y de entrada se calculan en base a la escala de estabilización $m_t$:
+    \begin{align}
+        f_t^s &= \exp(m_{t-1} + \tilde{f}_t - m_t) \\
+        i_t^s &= \exp(\tilde{i}_t - m_t)
+    \end{align}
+    De esta forma, la suma de los exponentes está acotada superiormente por $0$, evitando de forma robusta desbordamientos numéricos por arriba.
+
+    \item \textbf{Actualización del Estado de Celda y Normalizador}:
+    El estado interno de la celda $c_t$ y el normalizador acumulativo $n_t$ se actualizan secuencialmente:
+    \begin{align}
+        c_t &= f_t^s \odot c_{t-1} + i_t^s \odot \tilde{c}_t \\
+        n_t &= f_t^s \odot n_{t-1} + i_t^s
+    \end{align}
+    Donde $\odot$ denota el producto de Hadamard (elemento a elemento). El normalizador se inicializa como $n_0 = 1$.
+
+    \item \textbf{Normalización del Estado de Celda y Salida}:
+    Para contrarrestar el crecimiento debido a los términos exponenciales, el estado de la celda se normaliza antes de proyectarlo al estado oculto:
+    \begin{equation}
+        \hat{c}_t = \frac{c_t}{n_t + \epsilon}
+    \end{equation}
+    Donde $\epsilon = 10^{-8}$ es una constante para evitar divisiones por cero. Finalmente, el estado oculto $h_t$ se obtiene como:
+    \begin{align}
+        o_t &= \sigma(\tilde{o}_t) \\
+        h_t &= o_t \odot \tanh(\hat{c}_t)
+    \end{align}
+\end{enumerate}
+
+\subsubsection{Implementación en la Biblioteca}
+
+La celda anterior se programó en la clase \code{CustomxLSTMCell} dentro de \code{fatigueset/models/xlstm.py}. Posteriormente, la clase \code{CustomxLSTM} define la pila de capas recurrentes, permitiendo conectar múltiples capas de celdas sLSTM y aplicando regularización por \emph{dropout} entre capas intermedias. La clase final \code{CustomxLSTMRegressor} hereda de \code{nn.Module} y mapea el último paso temporal de la secuencia mediante una proyección lineal al espacio continuo de salida bidimensional de la fatiga:
+
+\begin{lstlisting}[caption={Estructura de la clase CustomxLSTMRegressor.}, label={lst:xlstm_regressor}]
+class CustomxLSTMRegressor(nn.Module):
+    def __init__(self, input_size: int, hidden_size: int = 64, num_layers: int = 2, dropout: float = 0.2, output_size: int = 2):
+        super().__init__()
+        self.xlstm = CustomxLSTM(input_size, hidden_size, num_layers, dropout)
+        self.fc = nn.Linear(hidden_size, output_size)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # x: (batch_size, seq_len, input_size)
+        out, _ = self.xlstm(x)
+        last_step_out = out[:, -1, :]
+        return self.fc(last_step_out)
+\end{lstlisting}
+
+
+% ======================================================================
 \section{Implementación de la Librería \code{fatigueset.models.foundation}}
 \label{sec:implementacion_foundation}
 % ======================================================================
@@ -542,35 +636,62 @@ Las dependencias principales instaladas incluyen: PyTorch (con CUDA), \code{mome
 
 \subsection{Scripts SLURM de ejecución}
 
-Se crearon tres scripts SLURM para la ejecución automatizada de cada experimento:
+Para posibilitar la ejecución desatendida y a escala de los experimentos, se estructuraron scripts bash controlados por SLURM. Estos scripts resuelven de forma nativa dos limitaciones críticas del entorno del clúster universitario:
+\begin{enumerate}
+    \item \textbf{Límite de Cuota de Disco en el Directorio Home}: Las librerías de HuggingFace y los servidores de Jupyter descargan por defecto los pesos de los modelos fundacionales (que suman más de 5~GB en total) y los archivos de sesión temporal en la carpeta de usuario de la cabecera (\code{\textasciitilde{}/.cache/}), la cual cuenta con una cuota restringida a 5~GB. Para evitar el fallo por desbordamiento (\emph{Disk quota exceeded}), se redireccionan los directorios de configuración y caché al almacenamiento de red persistente y con alta cuota del clúster mediante variables de entorno.
+    \item \textbf{Liberación de Caché de GPU}: Dado que el recolector de PyTorch no devuelve de inmediato la memoria asignada al driver del sistema mientras el proceso de Python esté activo, se configuró la ejecución secuencial de notebooks en procesos independientes de Python, garantizando una GPU totalmente libre al inicio de cada modelo.
+\end{enumerate}
 
-\begin{lstlisting}[language=bash, caption={Extracto de \code{run\_foundation\_server.sh}.}, label={lst:slurm_script}]
+El script \code{run\_foundation\_server.sh} ilustra esta configuración:
+
+\begin{lstlisting}[language=bash, caption={Script SLURM completo para modelos fundacionales (\code{run\_foundation\_server.sh}).}, label={lst:slurm_script}]
 #!/bin/bash
 #SBATCH --job-name Foundation_TFG
 #SBATCH --partition dios
 #SBATCH --gres=gpu:1
 #SBATCH --mem=32G
 #SBATCH --time=12:00:00
+#SBATCH --output=/mnt/homeGPU/egullonl01/tfg/Jupyters/slurm-%j.out
+#SBATCH --error=/mnt/homeGPU/egullonl01/tfg/Jupyters/slurm-%j.out
+
+export PATH="/opt/anaconda/anaconda3/bin:$PATH"
+export PATH="/opt/anaconda/bin:$PATH"
+
+# Redireccionar caches y configs para evitar problemas de cuota de disco
+export IPYTHONDIR="/mnt/homeGPU/egullonl01/.ipython"
+export JUPYTER_CONFIG_DIR="/mnt/homeGPU/egullonl01/.jupyter"
+export JUPYTER_DATA_DIR="/mnt/homeGPU/egullonl01/.local/share/jupyter"
+export JUPYTER_RUNTIME_DIR="/mnt/homeGPU/egullonl01/.local/share/jupyter/runtime"
+export HF_HOME="/mnt/homeGPU/egullonl01/.cache/huggingface"
+export XDG_CACHE_HOME="/mnt/homeGPU/egullonl01/.cache"
 
 eval "$(conda shell.bash hook)"
 conda activate /mnt/homeGPU/egullonl01/conda_tfg
 cd /mnt/homeGPU/egullonl01/tfg/Jupyters
 
-# Activar SERVER_MODE para modelos a escala completa
-sed -i 's/SERVER_MODE = False/SERVER_MODE = True/g' \
-    09_foundation_models.ipynb
+# Configurar SERVER_MODE de manera temporal en los notebooks
+sed -i 's/SERVER_MODE = False/SERVER_MODE = True/g' 09_foundation_models_moment.ipynb
+sed -i 's/SERVER_MODE = False/SERVER_MODE = True/g' 09_foundation_models_chronos.ipynb
 
+# 1. Ejecutar MOMENT fine-tuning en un proceso aislado de Python
+echo "Starting MOMENT..."
 jupyter nbconvert --to notebook --execute \
     --ExecutePreprocessor.kernel_name=python3 \
-    --inplace 09_foundation_models.ipynb
+    --inplace 09_foundation_models_moment.ipynb
 
-# Revertir para mantener Git limpio
-sed -i 's/SERVER_MODE = True/SERVER_MODE = False/g' \
-    09_foundation_models.ipynb
+# 2. Ejecutar Chronos zero-shot en su propio proceso limpio de Python
+echo "Starting Chronos..."
+jupyter nbconvert --to notebook --execute \
+    --ExecutePreprocessor.kernel_name=python3 \
+    --inplace 09_foundation_models_chronos.ipynb
+
+# Restaurar estado original para Git
+sed -i 's/SERVER_MODE = True/SERVER_MODE = False/g' 09_foundation_models_moment.ipynb
+sed -i 's/SERVER_MODE = True/SERVER_MODE = False/g' 09_foundation_models_chronos.ipynb
 \end{lstlisting}
 
 \paragraph{Mecanismo \code{SERVER\_MODE}.}
-Todos los notebooks incluyen una variable \code{SERVER\_MODE} que controla qué variante de modelo se carga. Los scripts SLURM la cambian automáticamente a \code{True} antes de la ejecución (para cargar los modelos grandes) y la revierten a \code{False} al finalizar (para mantener un estado limpio en Git). Los tres scripts comparten la configuración: partición \code{dios}, 1 GPU, 32 GB de RAM y 12 horas máximo.
+Todos los notebooks incluyen una variable \code{SERVER\_MODE} que controla qué variante de modelo se carga. Los scripts SLURM la cambian automáticamente a \code{True} antes de la ejecución (para cargar los modelos grandes) y la revierten a \code{False} al finalizar (para mantener un estado limpio en Git). Los tres scripts comparten la configuración: partición \code{dios}, 1 GPU, 32 GB de RAM y 12 horas máximo. El script \code{run\_timesfm\_server.sh} sigue una estructura homóloga para procesar \timesfm{} de forma aislada.
 
 \subsection{Pipeline de despliegue automático}
 
@@ -599,9 +720,13 @@ Se desarrollaron múltiples scripts de monitorización bajo \code{scratch/}:
 \label{sec:resultados}
 % ======================================================================
 
+
 \subsection{Tabla comparativa global}
 
 La Tabla~\ref{tab:resultados_globales} presenta los resultados de todos los modelos evaluados. Las métricas son MAE (error absoluto medio), RMSE (raíz del error cuadrático medio) y $R^2$ (coeficiente de determinación). Para los modelos fundacionales con predicciones separadas por dimensión, se reportan las dos dimensiones explícitamente.
+
+\paragraph{Nota metodológica sobre los modelos clásicos.}
+Es sumamente importante destacar una discrepancia metodológica en los resultados de los modelos clásicos de Machine Learning. Mientras que las métricas de los modelos de Deep Learning (personalizados y fundacionales) corresponden a la evaluación sobre el conjunto de validación en validación cruzada (reflejando capacidad de generalización real), el MAE y RMSE de los modelos clásicos se evaluaron sobre el propio conjunto de entrenamiento. Esto introduce un sesgo optimista severo y explica sus errores aparentemente reducidos (p.~ej., un MAE de 0.88 para Random Forest o 0.00 para el árbol de decisión). El $R^2$ negativo en la validación cruzada para estos mismos modelos clásicos confirma que sufren de un sobreajuste severo y carecen de capacidad real de generalización sobre sujetos no vistos.
 
 \begin{table}[H]
 \centering
@@ -612,12 +737,12 @@ La Tabla~\ref{tab:resultados_globales} presenta los resultados de todos los mode
 \toprule
 \textbf{Modelo} & \textbf{Tipo} & \textbf{MAE Medio} & \textbf{RMSE Medio} & \textbf{$R^2$ Medio} & \textbf{Params} \\
 \midrule
-\multicolumn{6}{l}{\textit{Modelos clásicos de ML (validación cruzada KFold)}} \\
-Random Forest & Ensamble & 0.88 & 1.04 & $-$2.41 & --- \\
-KNN (k=3) & Instancias & 1.69 & 2.20 & $-$3.57 & --- \\
-Decision Tree & Árbol & 0.00 & 0.00 & 1.00$^*$ & --- \\
+\multicolumn{6}{l}{\textit{Modelos clásicos de ML (validación cruzada KFold para $R^2$, entrenamiento para MAE/RMSE)$^\S$}} \\
+Random Forest & Ensamble & 0.88$^\S$ & 1.04$^\S$ & $-$2.41 & --- \\
+KNN (k=3) & Instancias & 1.69$^\S$ & 2.20$^\S$ & $-$3.57 & --- \\
+Decision Tree & Árbol & 0.00$^*$ & 0.00$^*$ & 1.00$^*$ & --- \\
 \midrule
-\multicolumn{6}{l}{\textit{Modelos de Deep Learning custom (MAE/RMSE/R² promediados sobre ambas dimensiones, optimizados)}} \\
+\multicolumn{6}{l}{\textit{Modelos de Deep Learning custom (MAE/RMSE/R² promediados sobre ambas dimensiones, validación CV)}} \\
 \textbf{Custom GRU (Opt.)} & Recurrente & \textbf{16.85} & \textbf{20.20} & $-$0.62 & 72,866 \\
 \textbf{Custom LSTM (Opt.)} & Recurrente & \textbf{17.02} & \textbf{20.44} & $-$0.66 & 97,058 \\
 \textbf{Custom PatchTST (Opt.)} & Transformer & \textbf{17.50} & \textbf{20.78} & $-$0.68 & 162,882 \\
@@ -627,7 +752,7 @@ Custom xLSTM (Opt.) & Recurrente & 17.85 & 21.09 & $-$0.74 & 323,522 \\
 Custom Transformer (Opt.) & Transformer & 17.97 & 20.99 & $-$0.76 & 139,310 \\
 Custom RNN (Baseline) & Recurrente & 30.09 & 34.93 & $-$5.07 & 1,890 \\
 \midrule
-\multicolumn{6}{l}{\textit{Modelos fundacionales (métricas por dimensión, extraídas mediante zero-shot/fine-tuning)}} \\
+\multicolumn{6}{l}{\textit{Modelos fundacionales (métricas de validación por dimensión, zero-shot/fine-tuning)}} \\
 \multirow{2}{*}{\textbf{Chronos (chronos-t5-base)}} & \multirow{2}{*}{Foundation} & Fís: 14.11 & Fís: 17.03 & Fís: $-$0.45 & \multirow{2}{*}{710M$^\dagger$} \\
 & & Men: 18.95 & Men: 22.22 & Men: $-$1.17 & \\
 \multirow{2}{*}{\textbf{\timesfm{} 2.5}} & \multirow{2}{*}{Foundation} & Fís: 16.39 & Fís: 20.15 & Fís: $-$1.10 & \multirow{2}{*}{200M$^\dagger$} \\
@@ -638,9 +763,10 @@ Custom RNN (Baseline) & Recurrente & 30.09 & 34.93 & $-$5.07 & 1,890 \\
 \end{tabular}
 \begin{flushleft}
 \footnotesize
-$^*$ Decision Tree con MAE=0 indica sobreajuste severo (memorización). \\
+$^*$ Decision Tree con MAE=0 e $R^2=1.00$ indica sobreajuste severo (memorización completa del conjunto de entrenamiento). \\
 $^\dagger$ Parámetros totales del backbone preentrenado (0 parámetros entrenados, linear probe externo). \\
-$^\ddagger$ Parámetros entrenables de la cabeza de regresión (backbone de 341M congelado).
+$^\ddagger$ Parámetros entrenables de la cabeza de regresión (backbone de 341M congelado). \\
+$^\S$ Métricas de MAE y RMSE calculadas sobre el conjunto de entrenamiento (no de validación cruzada).
 \end{flushleft}
 \end{table}
 
@@ -823,11 +949,34 @@ gc.collect(); torch.cuda.empty_cache()
 \end{lstlisting}
 
 \paragraph{Soluciones finales aplicadas.}
-Se han implementado dos soluciones complementarias para resolver este problema:
+Se han implementado tres soluciones complementarias para resolver los problemas de memoria GPU:
 \begin{enumerate}
     \item \textbf{Inferencia sin gradientes}: Se envolvió el paso forward del backbone congelado en un bloque \code{with torch.no\_grad():} en \code{MOMENTFatigueRegressor.forward} (cuando \code{freeze\_backbone} es \code{True}). Esto evitó de forma efectiva que PyTorch retuviera los grafos de activaciones en memoria.
-    \item \textbf{Separación de procesos secuenciales}: Dado que el distribuidor de caché de PyTorch (\textit{caching allocator}) mantiene bloques asignados para acelerar futuras peticiones y no los devuelve al driver de la GPU mientras el proceso de Python esté vivo, se dividió el notebook \code{09\_foundation\_models.ipynb} en dos notebooks independientes: \code{09\_foundation\_models\_moment.ipynb} y \code{09\_foundation\_models\_chronos.ipynb}. El script de ejecución de SLURM ejecuta ambos notebooks de forma secuencial en procesos de Python independientes. Al terminar el primer notebook, su proceso se destruye liberando por completo la memoria de la GPU, lo que permite al segundo notebook ejecutarse sobre una GPU totalmente vacía.
+    \item \textbf{Separación de procesos secuenciales}: Dado que el distribuidor de caché de PyTorch (\textit{caching allocator}) mantiene bloques asignados para acelerar futuras peticiones y no los devuelve al driver de la GPU mientras el proceso de Python esté vivo, se dividió el notebook \code{09\_foundation\_models.ipynb} en dos notebooks independientes: \code{09\_foundation\_models\_moment.ipynb} y \code{09\_foundation\_models\_chronos.ipynb}. El script de ejecución de SLURM ejecuta ambos de forma secuencial en procesos de Python independientes. Al terminar el primer notebook, su proceso se destruye liberando por completo la memoria de la GPU, lo que permite al segundo notebook ejecutarse sobre una GPU totalmente vacía.
+    \item \textbf{Aislamiento de TimesFM}: Al igual que Chronos y MOMENT, el modelo de Google \timesfm{} 2.5 (200M) se ejecuta en su propio notebook independiente \code{10\_timesfm.ipynb} y mediante el script de lanzamiento \code{run\_timesfm\_server.sh}. Esto garantiza un entorno limpio y predecible de memoria, libre de cualquier tipo de fragmentación previa del caching allocator.
 \end{enumerate}
+
+\subsection{Exceso de Cuota de Disco en Directorio Home (Disk Quota Exceeded)}
+\label{sec:problemas_cuota}
+
+\paragraph{Problema.}
+Durante la primera descarga de los backbones fundacionales preentrenados, la ejecución abortaba con un error de escritura en disco:
+\begin{verbatim}
+OSError: [Errno 122] Disk quota exceeded
+\end{verbatim}
+
+\paragraph{Causa.}
+Por defecto, la librería \code{transformers} de HuggingFace descarga y almacena los pesos de los modelos (MOMENT-large: $\sim$1.5~GB, Chronos-base: $\sim$2.8~GB, TimesFM: $\sim$1~GB) en el directorio personal del usuario bajo el host cabecera (\code{\textasciitilde{}/.cache/huggingface}). La cuota de almacenamiento para directorios de usuario del servidor universitario está limitada a 5~GB, lo que bloqueaba la descarga concurrente o consecutiva de los modelos fundacionales.
+
+\paragraph{Solución implementada.}
+Se redirigieron de forma explícita todas las variables de entorno de caché, ejecución y configuración al almacenamiento compartido persistente del clúster de computación, el cual posee una capacidad de almacenamiento de 239~TB y sin restricciones estrictas de cuota individual. En el inicio de los scripts SLURM, se establecen las siguientes redirecciones:
+\begin{itemize}
+    \item \code{HF\_HOME}: Redirigido a \code{/mnt/homeGPU/egullonl01/.cache/huggingface} para almacenar de forma segura los pesos de HuggingFace.
+    \item \code{XDG\_CACHE\_HOME}: Redirigido a \code{/mnt/homeGPU/egullonl01/.cache} para el almacenamiento de caché general.
+    \item \code{IPYTHONDIR}: Redirigido a \code{/mnt/homeGPU/egullonl01/.ipython} para la caché de IPython.
+    \item \code{JUPYTER\_*}: Las variables de configuración y datos de Jupyter (\code{JUPYTER\_CONFIG\_DIR}, \code{JUPYTER\_DATA\_DIR}, \code{JUPYTER\_RUNTIME\_DIR}) se redirigieron a subcarpetas equivalentes en \code{/mnt/homeGPU/egullonl01/}.
+\end{itemize}
+Esta reconfiguración evitó por completo los desbordamientos de cuota en el home de usuario, garantizando descargas de modelos sin fricciones.
 
 \subsection{Exceso de tiempo en SLURM (Optuna)}
 \label{sec:problemas_slurm}
@@ -887,6 +1036,11 @@ arXiv:2203.06924.
 Kottapalli, S. R. K., Hubli, K., Chandrashekhara, S., et al. (2025).
 \textit{Foundation Models for Time Series: A Survey}.
 arXiv.
+
+\bibitem{beck2024xlstm}
+Beck, M., Pöppel, K., Spanring, M., et al. (2024).
+\textit{xLSTM: Extended Long Short-Term Memory}.
+arXiv:2405.20455.
 
 \bibitem{goswami2024moment}
 Goswami, M., Szafer, K., Choudhry, A., et al. (2024).
