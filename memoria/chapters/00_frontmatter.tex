@@ -1,0 +1,239 @@
+% ======================================================================
+% PARTE PRELIMINAR (FRONTMATTER) - SEGUIMIENTO DE PLANTILLA UGR ETSIIT
+% ======================================================================
+
+% ----------------------------------------------------------------------
+% PORTADA PRINCIPAL OFICIAL ETSIIT (Plantilla_TFG_latex/portada/portada.tex)
+% ----------------------------------------------------------------------
+\begin{titlepage}
+
+\newlength{\centeroffset}
+\setlength{\centeroffset}{-0.5\oddsidemargin}
+\addtolength{\centeroffset}{0.5\evensidemargin}
+\thispagestyle{empty}
+
+\noindent\hspace*{\centeroffset}\begin{minipage}{\textwidth}
+
+\centering
+\includegraphics[width=0.9\textwidth]{figures/logo_ugr.jpg}\\[1.4cm]
+
+\textsc{ \Large TRABAJO FIN DE GRADO\\[0.2cm]}
+\textsc{ GRADO EN INGENIERÍA INFORMÁTICA}\\[1cm]
+
+% Título Principal Completo
+{\Huge\bfseries Análisis predictivo de fatiga mediante datos biométricos multimodales\\
+}
+\noindent\rule[-1ex]{\textwidth}{3pt}\\[3.5ex]
+\end{minipage}
+
+\vspace{2.5cm}
+\noindent\hspace*{\centeroffset}\begin{minipage}{\textwidth}
+\centering
+
+\textbf{Autor}\\ {Emilio Gullón López}\\[2.5ex]
+\textbf{Director}\\
+{Diego Jesús García Gil}\\[2cm]
+\includegraphics[width=0.3\textwidth]{figures/etsiit_logo.png}\\[0.1cm]
+\textsc{Escuela Técnica Superior de Ingenierías Informática y de Telecomunicación}\\
+\textsc{---}\\
+Granada, Julio de 2026
+\end{minipage}
+\end{titlepage}
+
+\clearpage
+
+% ----------------------------------------------------------------------
+% CRÉDITOS, LICENCIA Y DECLARACIÓN DE USO ÉTICO DE IA
+% ----------------------------------------------------------------------
+\thispagestyle{empty}
+\vspace*{\fill}
+
+\begin{center}
+    \textbf{Análisis predictivo de fatiga mediante datos biométricos multimodales}
+\end{center}
+
+\vspace{0.5cm}
+\noindent\copyright\,2026 por \textbf{Emilio Gullón López}.
+
+\vspace{0.4cm}
+\noindent\begin{minipage}{0.15\textwidth}
+    \includegraphics[width=\textwidth]{figures/cc_by_nc_sa.png}
+\end{minipage}
+\hfill
+\begin{minipage}{0.82\textwidth}
+\small
+Esta memoria de Trabajo de Fin de Grado se distribuye bajo una licencia internacional \textbf{Creative Commons Atribución-NoComercial-CompartirIgual 4.0 Internacional (CC BY-NC-SA 4.0)}. Para consultar los términos legales completos de esta licencia, visite: \url{https://creativecommons.org/licenses/by-nc-sa/4.0/}.
+
+\vspace{0.2cm}
+Se autoriza la consulta, copia y redistribución sin fines comerciales, siempre que se reconozca expresamente la autoría original y las obras derivadas se distribuyan bajo la misma licencia. Este documento será depositado en acceso abierto en el repositorio institucional \textbf{Digibug} de la Universidad de Granada (\url{https://digibug.ugr.es}).
+\end{minipage}
+
+\vspace{0.8cm}
+\noindent\rule{\linewidth}{0.4pt}
+
+\vspace{0.3cm}
+\noindent\textbf{Declaración de uso ético de herramientas de Inteligencia Artificial Generativa:}
+\begin{small}
+En cumplimiento de las directrices del Vicerrectorado de Transformación Digital y del CEPRUD de la Universidad de Granada \cite{ceprud2025ia}, se declara que se han utilizado herramientas de asistencia basada en modelos de lenguaje (LLM) como apoyo para la corrección ortotipográfica y formateo LaTeX. Todo el diseño metodológico, desarrollo de la librería \code{fatigueset-lib}, ejecución experimental y análisis de datos son aportaciones intelectuales originales del autor.
+\end{small}
+
+\vspace*{\fill}
+\clearpage
+
+% ----------------------------------------------------------------------
+% DECLARACIÓN DE AUTORIZACIÓN DE DEPÓSITO EN BIBLIOTECA (PLANTILLA UGR)
+% ----------------------------------------------------------------------
+\thispagestyle{empty}
+
+\noindent\rule[-1ex]{\textwidth}{2pt}\\[4.5ex]
+
+Yo, \textbf{Emilio Gullón López}, alumno de la titulación Grado en Ingeniería Informática de la \textbf{Escuela Técnica Superior de Ingenierías Informática y de Telecomunicación de la Universidad de Granada}, autorizo la ubicación de la siguiente copia de mi Trabajo Fin de Grado en la biblioteca del centro para que pueda ser consultada por las personas que lo deseen.
+
+\vspace{5cm}
+
+\noindent Fdo: Emilio Gullón López
+
+\vspace{2cm}
+
+\begin{flushright}
+Granada, Julio de 2026.
+\end{flushright}
+
+\clearpage
+
+% ----------------------------------------------------------------------
+% INFORME Y VISTO BUENO DEL DIRECTOR (PLANTILLA UGR)
+% ----------------------------------------------------------------------
+\thispagestyle{empty}
+
+\noindent\rule[-1ex]{\textwidth}{2pt}\\[4.5ex]
+
+D. \textbf{Diego Jesús García Gil}, Profesor del Departamento de Lenguajes y Sistemas Informáticos de la Universidad de Granada.
+
+\vspace{1.0cm}
+
+\textbf{Informa:}
+
+\vspace{0.8cm}
+
+Que el presente trabajo, titulado \textit{\textbf{Análisis predictivo de fatiga mediante datos biométricos multimodales}}, ha sido realizado bajo su supervisión por \textbf{Emilio Gullón López}, y autoriza la defensa de dicho trabajo ante el tribunal que corresponda.
+
+\vspace{1.0cm}
+
+Y para que conste, expide y firma el presente informe en Granada, Julio de 2026.
+
+\vspace{2cm}
+
+\textbf{El director:}
+
+\vspace{4cm}
+
+\noindent \textbf{Diego Jesús García Gil}
+
+\clearpage
+
+% ----------------------------------------------------------------------
+% RESUMEN EN ESPAÑOL (CON FORMATO PLANTILLA UGR)
+% ----------------------------------------------------------------------
+\thispagestyle{empty}
+
+\begin{center}
+{\large\bfseries Análisis predictivo de fatiga mediante datos biométricos multimodales}\\
+\end{center}
+\begin{center}
+Emilio Gullón López (alumno)\\
+\end{center}
+
+\vspace{0.5cm}
+\noindent{\textbf{Palabras clave}: Predicción de Fatiga, FatigueSet, Señales Fisiológicas Multimodales, Deep Learning, PyTorch, xLSTM, sLSTM, Modelos Fundacionales, MOMENT, Chronos, TimesFM, Optuna, GroupKFold, Series Temporales.}\\
+
+\vspace{0.7cm}
+\noindent{\textbf{Resumen}}\\
+
+La fatiga humana es un fenómeno psicofisiológico complejo que deteriora de forma crítica el rendimiento cognitivo, la coordinación motora y la toma de decisiones, constituyendo una de las principales causas de accidentes laborales, siniestros viales y patologías crónicas por estrés. La monitorización objetiva y no invasiva de la fatiga en entornos cotidianos representa un desafío abierto en la intersección entre computación ubicua, procesamiento de bioseñales y aprendizaje profundo.
+
+Este Trabajo de Fin de Grado aborda el modelado cuantitativo y la predicción simultánea de fatiga física y mental a partir de señales fisiológicas multimodales registradas mediante dispositivos vestibles. Se utiliza el dataset de referencia internacional \fatigueset{}, que recopila registros de 12 participantes mediante cuatro dispositivos comerciales (Empatica E4, Zephyr BioHarness 3.0, Muse S y Nokia eSense), totalizando 23 canales fisiológicos heterogéneos (ritmo cardíaco, HRV, actividad electrodérmica EDA, EEG en cuatro bandas espectrales, frecuencia respiratoria y acelerometría triaxial).
+
+En el plano metodológico e ingenieril, se ha desarrollado la librería modular en Python \code{fatigueset-lib}, que desacopla la carga de datos, el procesamiento temporal de señales (filtrado, segmentación en ventanas y extracción de características estadísticas y espectrales), la factoría de modelos de redes neuronales en PyTorch, la optimización bayesiana de hiperparámetros mediante el algoritmo TPE con Optuna, y la evaluación reproducible mediante validación cruzada estratificada por participante (\textit{GroupKFold}).
+
+Se ha llevado a cabo un estudio comparativo exhaustivo que abarca cuatro paradigmas de modelado:
+\begin{enumerate}
+    \item \textbf{Modelos Clásicos de Machine Learning:} Baselines tabulares (Random Forest, KNN, Árboles de Decisión, Ridge y SVR).
+    \item \textbf{Redes Neuronales Profundas Clásicas y Recurrentes:} RNN estándar, LSTM y GRU.
+    \item \textbf{Arquitecturas Avanzadas de Series Temporales:} TCN, modelos híbridos CNN-LSTM, Transformers, \patchtst{} y la reciente arquitectura recurrente extendida \xlstm{} (implementando la variante estabilizada \slstm{}).
+    \item \textbf{Modelos Fundacionales de Series Temporales:} Evaluación en régimen \textit{zero-shot} y \textit{fine-tuning} de arquitecturas preentrenadas: \moment{}, \chronos{} y \timesfm{} 2.5, desplegados en un clúster universitario GPU con SLURM.
+\end{enumerate}
+
+Los resultados experimentales demuestran que las arquitecturas recurrentes optimizadas con Optuna (Custom GRU con $\text{MAE}=16.99$, Custom \xlstm{} con $\text{MAE}=17.33$ y Custom LSTM con $\text{MAE}=17.50$) ofrecen el equilibrio óptimo entre precisión predictiva, estabilidad y eficiencia computacional. Asimismo, los modelos fundacionales como Chronos-T5 demuestran una prometedora capacidad \textit{zero-shot} ($\text{MAE}=14.11$ en fatiga física), aunque con un coste computacional significativamente superior. El trabajo concluye con el análisis del impacto ético, la privacidad de datos biométricos y la alineación con los Objetivos de Desarrollo Sostenible (ODS 3, 8 y 9).
+
+\clearpage
+
+% ----------------------------------------------------------------------
+% ABSTRACT IN ENGLISH (CON FORMATO PLANTILLA UGR)
+% ----------------------------------------------------------------------
+\thispagestyle{empty}
+
+\begin{center}
+{\large\bfseries Predictive Fatigue Analysis Using Multimodal Biometric Data}\\
+\end{center}
+\begin{center}
+Emilio Gullón López (student)\\
+\end{center}
+
+\vspace{0.5cm}
+\noindent{\textbf{Keywords}: Fatigue Prediction, FatigueSet, Multimodal Physiological Signals, Deep Learning, PyTorch, xLSTM, sLSTM, Foundation Models, MOMENT, Chronos, TimesFM, Optuna, GroupKFold, Time Series.}\\
+
+\vspace{0.7cm}
+\noindent{\textbf{Abstract}}\\
+
+Human fatigue is a complex psychophysiological phenomenon that critically impairs cognitive performance, motor coordination and decision-making, constituting one of the leading causes of occupational accidents, road incidents and chronic stress-related pathologies. Objective, non-invasive fatigue monitoring in real-world settings remains an open challenge at the intersection of ubiquitous computing, biosignal processing and deep learning.
+
+This Bachelor's Thesis addresses the quantitative modelling and simultaneous prediction of physical fatigue and mental fatigue from multimodal physiological signals recorded by wearable devices. To this end, the international benchmark dataset \fatigueset{} is employed, which collects continuous physiological recordings from 12 participants across cognitive and physical sessions using four commercial devices (Empatica E4, Zephyr BioHarness 3.0, Muse S and Nokia eSense), comprising 23 heterogeneous physiological channels (heart rate, heart rate variability HRV, electrodermal activity EDA, electroencephalography EEG in four spectral bands, respiratory rate and triaxial accelerometry).
+
+From a methodological and software engineering perspective, the modular library \code{fatigue\-set-\-lib} has been designed and implemented in Python, decoupling data loading, temporal signal processing (filtering, windowing and extraction of statistical and spectral features), a PyTorch neural network model factory, Bayesian hyperparameter optimisation via the TPE (\textit{Tree-structured Parzen Estimator}) algorithm with Optuna, and reproducible evaluation through participant-stratified cross-validation (\textit{GroupKFold}) to ensure the complete absence of data leakage.
+
+A comprehensive comparative study has been conducted spanning four modelling paradigms:
+\begin{enumerate}
+    \item \textbf{Classical Machine Learning Models:} Tabular baselines (Random Forest, KNN, Decision Trees, Ridge and SVR).
+    \item \textbf{Classical and Recurrent Deep Neural Networks:} Standard RNN, LSTM and GRU.
+    \item \textbf{Advanced Time Series Architectures:} Dilated causal temporal convolutions (TCN), spatio-temporal hybrid models (CNN-LSTM), time series Transformers, patch-based models (\patchtst{}) and the recent extended recurrent architecture \xlstm{} (implementing the stabilised variant \slstm{}).
+    \item \textbf{Time Series Foundation Models:} Zero-shot and fine-tuning evaluation of large-scale pretrained architectures: \moment{}, \chronos{} and \timesfm{} 2.5, deployed on a university GPU cluster managed by SLURM.
+\end{enumerate}
+
+Experimental results demonstrate that Optuna-optimised recurrent architectures (Custom GRU with $\text{MAE}=16.99$, Custom \xlstm{} with $\text{MAE}=17.33$ and Custom LSTM with $\text{MAE}=17.50$) achieve the optimal balance between predictive accuracy, stability and computational efficiency. Furthermore, foundation models such as Chronos-T5 exhibit promising zero-shot inference capability ($\text{MAE}=14.11$ on physical fatigue), albeit with significantly higher computational cost. The work concludes with an analysis of ethical impact, biometric data privacy and alignment with the Sustainable Development Goals (SDGs 3, 8 and 9).
+
+\cleardoublepage
+
+% ----------------------------------------------------------------------
+% AGRADECIMIENTOS
+% ----------------------------------------------------------------------
+\chapter*{Agradecimientos}
+\addcontentsline{toc}{chapter}{Agradecimientos}
+
+A mi familia, por su apoyo incondicional y paciencia infinita a lo largo de todos estos años de formación académica. Su aliento en los momentos de mayor fatiga ha sido el verdadero motor que ha hecho posible la culminación de este grado.
+
+A la persona que ha tutorizado este Trabajo de Fin de Grado, por su guía experta, rigor científico, disponibilidad constante y certeras orientaciones tanto en la formulación del problema como en la revisión de los resultados experimentales.
+
+A mis compañeros y amigos de la Escuela Técnica Superior de Ingenierías Informática y de Telecomunicación (ETSIIT), con quienes he compartido interminables sesiones de estudio, proyectos y debates que han enriquecido mi crecimiento personal y profesional como ingeniero informático.
+
+Al profesorado de la Universidad de Granada, por transmitir con vocación los fundamentos científicos y técnicos de la computación y la ciencia de datos. Asimismo, agradezco al Centro de Servicios de Informática y Redes de Comunicación (CSIRC) por proveer la infraestructura de computación de altas prestaciones en el clúster GPU universitario.
+
+\vspace{1cm}
+\begin{flushright}
+    \emph{Emilio Gullón López}\\
+    \emph{Granada, Julio de 2026}
+\end{flushright}
+
+\cleardoublepage
+
+% ----------------------------------------------------------------------
+% ÍNDICES GENERALES
+% ----------------------------------------------------------------------
+\tableofcontents
+\cleardoublepage
+
+\listoffigures
+\cleardoublepage
+
+\listoftables
+\cleardoublepage

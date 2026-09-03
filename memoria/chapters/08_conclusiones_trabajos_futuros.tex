@@ -1,0 +1,124 @@
+% ======================================================================
+% CAPÍTULO 9: CONCLUSIONES, IMPACTO ÉTICO/ODS Y TRABAJOS FUTUROS
+% ======================================================================
+
+\chapter{Conclusiones, Impacto Ético/ODS y Trabajos Futuros}
+\label{cap:conclusiones}
+
+\section{Conclusiones}
+\label{sec:conclusiones_generales}
+
+Este Trabajo de Fin de Grado ha abordado de manera integral el problema de la estimación y predicción cuantitativa y continua de la fatiga física y mental mediante el procesamiento y modelado de bioseñales multimodales sobre el dataset de referencia internacional \fatigueset{}. La valoración global de los resultados obtenidos es altamente favorable, habiéndose alcanzado satisfactoriamente el Objetivo General (OG) de desarrollar un framework metodológico y software reproducible basado en Deep Learning y Modelos Fundacionales para la monitorización fisiológica no invasiva.
+
+\subsection{Evaluación del Cumplimiento de los Objetivos Específicos}
+
+A continuación, se detalla el balance individualizado del grado de consecución de cada uno de los seis Objetivos Específicos (OE1 a OE6) establecidos en el Capítulo~\ref{cap:introduccion}, indicando el porcentaje de realización, las tareas ejecutadas, las evidencias de verificación en la memoria y las competencias demostradas:
+
+\begin{enumerate}[label=\textbf{OE\arabic*.}, leftmargin=1.8cm]
+    \item \textbf{Revisión Bibliográfica y Estado del Arte (Consecución: 100\,\%):}
+    \begin{itemize}
+        \item \textit{Resumen de lo realizado:} Se llevó a cabo una revisión sistemática de la literatura sobre la neurofisiología de la fatiga (variabilidad del ritmo cardíaco HRV, respuesta galvánica EDA, ritmos cerebrales EEG, frecuencia respiratoria), la taxonomía de modelos para series temporales (clásicos, RNN, LSTM, TCN, Transformers y Modelos Fundacionales) y los marcos regulatorios vigentes. Se analizaron más de 60 referencias de impacto científico.
+        \item \textit{Evidencias en la memoria:} Capítulo~\ref{cap:estado_del_arte} (Secciones~\ref{sec:teoria_fisiologia}--\ref{sec:teoria_taxonomia}), Tabla~\ref{tab:sota_taxonomia_completa} y bibliografía general del documento.
+        \item \textit{Competencias demostradas:} Acredita capacidad de búsqueda bibliográfica avanzada, análisis crítico del estado de la técnica y síntesis rigurosa de información científica.
+    \end{itemize}
+
+    \item \textbf{Ingesta, Filtrado y Procesamiento de Bioseñales de FatigueSet (Consecución: 100\,\%):}
+    \begin{itemize}
+        \item \textit{Resumen de lo realizado:} Se diseñó un pipeline automatizado y reproducible para resolver la desalineación temporal asíncrona de los 23 canales fisiológicos de \fatigueset{} (muestreados a 1 Hz, 4 Hz y 256 Hz) mediante filtrado anti-aliasing Butterworth, interpolación por Spline Cúbica a 64 Hz, segmentación en ventanas deslizantes ($W=60\,\text{s}, \Delta=30\,\text{s}$) y extracción de 42 características en dominios temporal, frecuencial (PSD Welch) y no lineal (SampEn, Poincaré).
+        \item \textit{Evidencias en la memoria:} Capítulo~\ref{cap:dataset_preprocesamiento} (Secciones~\ref{sec:preprocesamiento_pipeline}--\ref{sec:feature_engineering}), Figuras~\ref{fig:pipeline_preprocesado_tikz} y Tabla~\ref{tab:sensores_canales_fatigueset}.
+        \item \textit{Competencias demostradas:} Demuestra solvencia en el tratamiento digital de señales biomédicas y la estructuración eficiente de datos multivariados.
+    \end{itemize}
+
+    \item \textbf{Diseño e Implementación del Framework Software \code{fatigueset-lib} (Consecución: 100\,\%):}
+    \begin{itemize}
+        \item \textit{Resumen de lo realizado:} Se construyó desde cero la librería modular en Python \code{fatigueset-lib}, estructurada bajo principios SOLID, patrones de diseño limpios y tipado estático estricto. Incluye la implementación nativa en PyTorch de la celda recurrente \slstm{} (familia xLSTM) con estabilización por normalizador logarítmico, un motor desacoplado de entrenamiento (\code{engine.py}) y una suite de pruebas unitarias con \code{pytest}.
+        \item \textit{Evidencias en la memoria:} Capítulo~\ref{cap:arquitectura_framework} (Secciones~\ref{sec:soft_principios}--\ref{sec:soft_optuna_arch}), Listados~\ref{lst:tcn_code}--\ref{lst:engine_code}, Figura~\ref{fig:libreria_diagrama_expandido} y Apéndice~\ref{ap:manual_libreria}.
+        \item \textit{Competencias demostradas:} Manifiesta una alta capacidad de arquitectura de software, desarrollo modular reutilizable y aplicación de prácticas avanzadas de ingeniería del software.
+    \end{itemize}
+
+    \item \textbf{Optimización Bayesiana de Hiperparámetros con Optuna (Consecución: 100\,\%):}
+    \begin{itemize}
+        \item \textit{Resumen de lo realizado:} Se implementó un motor de búsqueda bayesiana TPE con persistencia SQLite (\code{optuna\_v2.db}). Para evitar rigurosamente la fuga de información inter-sujeto, se configuró un esquema de validación cruzada estratificada por participante (\textit{GroupKFold}), optimizando de forma conjunta hiperparámetros de arquitectura, regularización y optimizadores (Adam, AdamW, RMSprop).
+        \item \textit{Evidencias en la memoria:} Capítulo~\ref{cap:arquitectura_framework} (Sección~\ref{sec:soft_optuna_arch}), Capítulo~\ref{cap:experimentacion} (Sección~\ref{sec:exp_groupkfold}), Figuras~\ref{fig:comparativa_global_paradigmas}--\ref{fig:optuna_curves} y Apéndice~\ref{ap:optuna_params}.
+        \item \textit{Competencias demostradas:} Evidencia metodologías rigurosas de experimentación en Machine Learning y prevención activa de sesgos de sobreajuste.
+    \end{itemize}
+
+    \item \textbf{Benchmarking Comparativo y Computación en Clúster GPU (Consecución: 100\,\%):}
+    \begin{itemize}
+        \item \textit{Resumen de lo realizado:} Se desplegaron y evaluaron doce arquitecturas pertenecientes a tres paradigmas (modelos tabulares clásicos, Deep Learning profundo y Modelos Fundacionales como \moment{}, \chronos{} y \timesfm{}) sobre el clúster GPU universitario (\code{ngpu.ugr.es}). Se gestionaron los scripts de envío SLURM, resolviendo problemas de memoria VRAM y cuota de almacenamiento remoto.
+        \item \textit{Evidencias en la memoria:} Capítulo~\ref{cap:experimentacion} (Secciones~\ref{sec:exp_cluster}--\ref{sec:exp_fases}), Capítulo~\ref{cap:resultados} (Sección~\ref{sec:res_globales}), Tablas~\ref{tab:resultados_globales_completa}--\ref{tab:dl_folds_detail} y Apéndice~\ref{ap:slurm_scripts}.
+        \item \textit{Competencias demostradas:} Demuestra dominio de infraestructuras de supercomputación HPC, gestión de recursos en paralelo y evaluación de modelos de IA de última generación.
+    \end{itemize}
+
+    \item \textbf{Análisis de Resultados, Impacto Ético/ODS y Presupuesto (Consecución: 100\,\%):}
+    \begin{itemize}
+        \item \textit{Resumen de lo realizado:} Se consolidaron las métricas de regresión ($R^2$, MAE, RMSE, Pearson $r$, parámetros, tiempos de inferencia), elaborando análisis de Pareto. Se validaron empíricamente las hipótesis de investigación, se analizó el marco normativo (RGPD, LPDGDD, EU AI Act), la contribución a los ODS y el presupuesto económico industrial del proyecto.
+        \item \textit{Evidencias en la memoria:} Capítulo~\ref{cap:resultados} (Secciones~\ref{sec:res_globales}--\ref{sec:res_limitaciones}), Capítulo~\ref{cap:planificacion} (Sección~\ref{sec:costes_presupuesto}) y Capítulo~\ref{cap:conclusiones} (Secciones~\ref{sec:concl_etica}--\ref{sec:concl_futuro}).
+        \item \textit{Competencias demostradas:} Muestra madurez en la discusión crítica de resultados, conciencia ética y de sostenibilidad, e ingeniería económica.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Formación Previa del Grado y Retos de Aprendizaje Autodidacta}
+
+La realización de este proyecto ha supuesto el nexo de integración de las competencias adquiridas a lo largo del Grado en Ingeniería Informática. Asignaturas fundamentales como \textit{Aprendizaje Automático}, \textit{Ciencia de Datos}, \textit{Procesamiento de Señales}, \textit{Sistemas Concurrentes y Distribuidos} e \textit{Ingeniería del Software} aportaron la base teórica y algorítmica para afrontar la ingesta de datos y el diseño del framework.
+
+No obstante, la naturaleza de vanguardia del proyecto exigió abordar de forma autodidacta complejos retos tecnológicos no cubiertos en el plan de estudios habitual:
+\begin{enumerate}
+    \item \textbf{Estabilización Matemática de Celdas Recurrentes de Última Generación:} La formulación e implementación desde cero en PyTorch de las compuertas exponenciales y la normalización logarítmica con seguimiento del máximo acumulado $m_t$ en la celda \slstm{} (de la familia xLSTM), imprescindible para evitar el desbordamiento numérico en precisión simple \code{float32}.
+    \item \textbf{Modelos Fundacionales para Series Temporales (\textit{Time Series Foundation Models}):} El estudio de las arquitecturas de parches (\moment{}), tokenización de cuantiles (\chronos{}) y decodificadores causales (\timesfm{}), así como su adaptación y evaluación probabilística zero-shot y fine-tuning.
+    \item \textbf{Gestión Avanzada de Infraestructura HPC en Clúster GPU:} La programación de scripts de envío batch en SLURM, la configuración de entornos virtuales remotos y la redirección estratégica de cachés en red para superar cuotas de almacenamiento estrictas.
+\end{enumerate}
+
+\subsection{Aspectos Éticos, Privacidad y Protección de Datos Biométricos}
+\label{sec:concl_etica}
+
+El tratamiento de bioseñales y datos fisiológicos humanos plantea implicaciones éticas y legales de máxima sensibilidad que han sido consideradas rigurosamente \cite{boucsein2012electrodermal, guillen2025libro}.
+
+\begin{itemize}
+    \item \textbf{Cumplimiento Normativo (RGPD y LPDGDD):} En estricta conformidad con el Reglamento General de Protección de Datos (RGPD, Reglamento UE 2016/679) y la Ley Orgánica 3/2018 (LPDGDD) \cite{boe2018lpdgdd}, los datos fisiológicos constituyen categorías especiales de datos de salud (Art. 9 RGPD). Los registros del dataset \fatigueset{} están completamente disociados y anonimizados mediante identificadores numéricos (P01 a P12), imposibilitando la reidentificación de los participantes.
+    \item \textbf{Principios Bioéticos de la IA:} Se defiende firmemente el principio de no maleficencia y uso no punitivo. Las herramientas de monitorización de fatiga deben orientarse exclusivamente a la prevención de riesgos laborales y la mejora de la salud del trabajador, quedando prohibido su uso para vigilancia coercitiva o penalizaciones salariales.
+\end{itemize}
+
+\subsection{Alineación con los Objetivos de Desarrollo Sostenible (ODS)}
+\label{sec:concl_ods}
+
+El proyecto contribuye directamente a la Agenda 2030 de las Naciones Unidas \cite{onu2015ods} a través de tres pilares:
+\begin{enumerate}
+    \item \textbf{ODS 3 (Salud y Bienestar):} Facilita la prevención no invasiva del agotamiento físico y cognitivo, mitigando crisis de estrés ocupacional y patologías cardiovasculares derivadas.
+    \item \textbf{ODS 8 (Trabajo Decente y Crecimiento Económico):} Aporta soluciones para reducir drásticamente la siniestralidad laboral y vial en entornos críticos (conductores profesionales, operadores de maquinaria pesada, personal sanitario).
+    \item \textbf{ODS 9 (Industria, Innovación e Infraestructura):} Demuestra que modelos convolucionales ligeros (TCN con 175k parámetros) logran una alta precisión predictiva con un bajo consumo energético, promoviendo una Inteligencia Artificial Sostenible y verde.
+\end{enumerate}
+
+\subsection{Valoración Personal, Lecciones Aprendidas y Competencias}
+\label{sec:concl_valoracion}
+
+A nivel personal, la realización de este Trabajo de Fin de Grado ha representado la experiencia académica más exigente, enriquecedora y transformadora de mis estudios universitarios. 
+
+Me siento profundamente orgulloso de la calidad técnica y la madurez alcanzada en el desarrollo de la librería \code{fatigueset-lib}, así como de la rigurosidad metodológica demostrada al aplicar validación cruzada por sujeto para evitar el sobreajuste. Asimismo, valoro muy positivamente la excelente comunicación y orientación recibida por parte de mis tutores a lo largo de todo el proceso.
+
+Esta experiencia me ha permitido desarrollar de forma notable habilidades blandas (\textit{soft skills}) fundamentales para mi futuro profesional: capacidad de autoorganización, pensamiento crítico, adaptabilidad ante imprevistos y comunicación científica formal. 
+
+Respecto a las lecciones aprendidas y puntos de mejora, reconozco que en las fases iniciales pequé de cierto optimismo al estimar los tiempos necesarios para la estabilización numérica de algoritmos avanzados como \slstm{} y el ajuste de cuotas en el clúster GPU. Este escollo provocó una acumulación de tareas en la fase intermedia que me generó momentos de saturación. Sin embargo, este contratiempo me aportó un aprendizaje inestimable: en proyectos de ingeniería e investigación de gran envergadura es imprescindible incorporar márgenes de contingencia técnicos desde el diseño inicial y anticipar las limitaciones de infraestructura antes del despliegue masivo.
+
+
+% ======================================================================
+\section{Trabajos Futuros}
+\label{sec:concl_futuro}
+% ======================================================================
+
+A partir de los resultados y la arquitectura desarrollada en este Trabajo de Fin de Grado, se proponen cinco líneas estratégicas de trabajo futuro para continuar y expandir la investigación:
+
+\subsection{Despliegue en Tiempo Real e Inferencia Edge (Edge AI)}
+Se propone exportar los modelos óptimos entrenados en PyTorch (especialmente la arquitectura Custom TCN) a formatos abiertos e interoperables como ONNX Runtime y aplicar cuantización estática a enteros de 8 bits (\code{INT8}) mediante NVIDIA TensorRT. Esta tarea permitirá ejecutar el motor de inferencia en tiempo real directamente sobre microcontroladores y pulseras vestibles comerciales de muy bajo consumo energético, reduciendo la latencia de predicción a milisegundos y permitiendo un funcionamiento autónomo sin dependencia de conexión a Internet.
+
+\subsection{Explicabilidad Algorítmica (XAI) en Bioseñales Fisiológicas}
+Resulta prioritario integrar módulos de explicabilidad algorítmica basados en Gradientes Integrados (\textit{Integrated Gradients}) y valores SHAP (\textit{SHapley Additive exPlanations}) adaptados a series temporales multivariadas. Esto permitirá generar mapas de importancia de características en tiempo real, ofreciendo a los responsables de prevención de riesgos laborales y personal médico una justificación clara e interpretable de los motivos biológicos (p.~ej., caída sostenida del tono vagal en HRV o picos de conductancia EDA) que han desencadenado la alerta de fatiga.
+
+\subsection{Aprendizaje Federado (Federated Learning) y Adaptación Persona-Específica}
+Para abordar la variabilidad fisiológica inter-sujeto preservando al máximo la confidencialidad, se plantea implementar un esquema de Aprendizaje Federado (\textit{Federated Learning}) mediante algoritmos como \code{FedAvg} o \code{FedProx}. De este modo, cada usuario podrá adaptar y personalizar los pesos del modelo predictivo sobre su propio dispositivo vestible en función de su línea base fisiológica individual, sin necesidad de transmitir bioseñales crudas a ningún servidor central.
+
+\subsection{Ampliación de Cohortes y Protocolos Ecológicos (\textit{In-the-Wild})}
+Se sugiere extender el trabajo experimental mediante la recolección de datos sobre cohortes más amplias y heterogéneas ($N > 100$ participantes) en entornos laborales y cotidianos reales sin restricciones de laboratorio (\textit{in-the-wild}). Para ello se desarrollarán técnicas de Adaptación de Dominio (\textit{Domain Adaptation}) que mitiguen el artefacto de movimiento presente en señales PPG y acelerometría durante actividades de la vida diaria.
+
+\subsection{Transferencia Tecnológica y Modelo de Negocio SaaS}
+Finalmente, se propone formular un plan de transferencia tecnológica enfocado en la creación de una propuesta de valor comercial orientada a empresas de transporte logístico, flotas de carretera y mutuas de accidentes laborales. Se diseñaría un modelo de Software como Servicio (SaaS) en la nube que integre la librería \code{fatigueset-lib} con paneles de control ergonómicos e indicadores de riesgo en tiempo real para supervisores de planta y coordinadores de seguridad.

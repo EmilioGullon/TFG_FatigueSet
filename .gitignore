@@ -35,6 +35,18 @@ Thumbs.db
 *.ckpt
 *.log
 *.png
+!memoria/figures/*.png
+!memoria/figures/*.jpg
+!memoria/figures/*.gif
 
 # Jupyter
 .ipynb_checkpoints/
+TFGs/2024_Proyecto_Innovación_Docente_TFG_y_TFM_UGR-3.pdf
+TFGs/Documentacion.pdf
+TFGs/Memoria_Jose_Antonio_Lopez_Palenzuela.pdf
+TFGs/proyecto.pdf
+TFGs/proyecto2.pdf
+TFGs/TFG_alejandro_diego.pdf
+TFGs/TFG_JesusReyesdeToro.pdf
+TFGs/TFG_RSA.pdf
+TFGs/TFG-memoria_SantiagoGarvinPerez.pdf

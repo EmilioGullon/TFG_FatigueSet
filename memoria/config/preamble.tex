@@ -1,0 +1,136 @@
+% ======================================================================
+% CONFIGURACIÓN Y PREÁMBULO GLOBAL - MEMORIA TFG ETSIIT - UGR
+% ======================================================================
+
+% ---- Codificación e Idioma ----
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-tabla,es-nodecimaldot]{babel}
+
+% ---- Tipografía y Márgenes ----
+\usepackage{lmodern}
+\usepackage[a4paper, top=2.5cm, bottom=2.5cm, left=3.0cm, right=2.5cm, headheight=16pt]{geometry}
+\renewcommand{\baselinestretch}{1.18} % Interlineado académico profesional
+
+% ---- Matemáticas y Símbolos ----
+\usepackage{amsmath, amssymb}
+\usepackage{xspace}
+\providecommand{\bm}[1]{\mathbf{#1}}
+
+% ---- Tablas y Figuras ----
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+
+% ---- Encabezados y Pies de Página ----
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE,RO]{\thepage}
+\fancyhead[RE]{\small\nouppercase{\leftmark}}
+\fancyhead[LO]{\small\nouppercase{\rightmark}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% ---- Colores Corporativos y de Diseño ----
+\usepackage{xcolor}
+\definecolor{ugrred}{RGB}{198, 12, 48}       % Rojo institucional UGR
+\definecolor{etsiitblue}{RGB}{0, 68, 124}     % Azul institucional ETSIIT
+\definecolor{darkblue}{RGB}{12, 45, 110}
+\definecolor{darkgreen}{RGB}{20, 110, 45}
+\definecolor{codebg}{RGB}{248, 249, 250}
+\definecolor{codeframe}{RGB}{220, 224, 230}
+\definecolor{codekeyword}{RGB}{175, 0, 80}
+\definecolor{codestring}{RGB}{20, 130, 40}
+\definecolor{codecomment}{RGB}{110, 115, 125}
+
+% ---- Formato de Código Fuente ----
+\usepackage{listings}
+\lstdefinestyle{pythonstyle}{
+    language=Python,
+    backgroundcolor=\color{codebg},
+    basicstyle=\ttfamily\footnotesize,
+    keywordstyle=\color{codekeyword}\bfseries,
+    stringstyle=\color{codestring},
+    commentstyle=\color{codecomment}\itshape,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    numbersep=8pt,
+    frame=single,
+    rulecolor=\color{codeframe},
+    breaklines=true,
+    breakatwhitespace=true,
+    showstringspaces=false,
+    tabsize=4,
+    captionpos=b,
+    xleftmargin=1.5em,
+    framexleftmargin=1.5em
+}
+\lstdefinestyle{bashstyle}{
+    language=bash,
+    backgroundcolor=\color{codebg},
+    basicstyle=\ttfamily\footnotesize,
+    keywordstyle=\color{codekeyword}\bfseries,
+    commentstyle=\color{codecomment}\itshape,
+    numbers=none,
+    frame=single,
+    rulecolor=\color{codeframe},
+    breaklines=true,
+    showstringspaces=false,
+    tabsize=2,
+    captionpos=b
+}
+\lstset{style=pythonstyle}
+
+% ---- Diagramas Vectoriales TikZ ----
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows, positioning, calc, fit, backgrounds, patterns}
+
+% ---- Hipervínculos ----
+% Limpiar páginas en blanco creadas por \cleardoublepage sin dependencias externas
+\makeatletter
+\def\cleardoublepage{\clearpage\if@twoside \ifodd\c@page\else
+  \hbox{}\thispagestyle{empty}\newpage\if@twocolumn\hbox{}\newpage\fi\fi\fi}
+\makeatother
+
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=etsiitblue,
+    citecolor=darkgreen,
+    urlcolor=etsiitblue,
+    filecolor=etsiitblue,
+    pdfauthor={Emilio Gullón},
+    pdftitle={Análisis predictivo de fatiga mediante datos biométricos multimodales},
+    pdfsubject={Trabajo de Fin de Grado - ETSIIT UGR},
+    pdfkeywords={Fatiga Mental, Fatiga Física, FatigueSet, Deep Learning, PyTorch, sLSTM, xLSTM, Foundation Models, MOMENT, Chronos, TimesFM, Optuna, Series Temporales}
+}
+
+% ---- Listas e Índices ----
+\usepackage{enumitem}
+\setlist{itemsep=3pt, topsep=4pt}
+\usepackage{tocbibind}
+
+% ---- Comandos y Macros Personalizadas ----
+\providecommand{\euro}{€}
+\newcommand{\fatigueset}{\textsc{FatigueSet}}
+\newcommand{\moment}{\textsc{MOMENT}}
+\newcommand{\chronos}{\textsc{Chronos}}
+\newcommand{\timesfm}{\textsc{TimesFM}}
+\newcommand{\xlstm}{\textsc{xLSTM}}
+\newcommand{\slstm}{\textsc{sLSTM}}
+\newcommand{\mlstm}{\textsc{mLSTM}}
+\newcommand{\patchtst}{\textsc{PatchTST}}
+\newcommand{\code}[1]{\texttt{#1}}
+
+% ---- Entornos Teorema/Definición Estándar ----
+\newtheorem{definicion}{Definición}[chapter]
+\newtheorem{hipotesis}{Hipótesis}[chapter]
+\newtheorem{observacion}{Observación}[chapter]

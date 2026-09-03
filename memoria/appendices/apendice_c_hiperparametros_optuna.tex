@@ -1,0 +1,62 @@
+% ======================================================================
+% APÉNDICE C: HIPERPARÁMETROS ÓPTIMOS DE OPTUNA
+% ======================================================================
+
+\chapter{Espacios de Búsqueda y Mejores Hiperparámetros de Optuna}
+\label{ap:optuna_params}
+
+\section{Espacios de Búsqueda por Arquitectura}
+\label{sec:ap_espacios_busqueda}
+
+La Tabla~\ref{tab:optuna_espacios} describe las distribuciones de muestreo y rangos configurados para el algoritmo TPE en los estudios de optimización bayesiana con Optuna v2:
+
+\begin{table}[H]
+\centering
+\caption{Espacios de búsqueda de hiperparámetros configurados en Optuna.}
+\label{tab:optuna_espacios}
+\small
+\begin{tabularx}{\linewidth}{@{}llcX@{}}
+\toprule
+\textbf{Hiperparámetro} & \textbf{Tipo / Distribución} & \textbf{Rango / Opciones} & \textbf{Modelos que Aplica} \\
+\midrule
+\code{optimizer} & Categórica & \{\code{Adam}, \code{AdamW}, \code{RMSprop}\} & Todos los modelos \\
+\code{lr} (learning rate) & Log-Uniforme & $[1.0 \times 10^{-5}, 1.0 \times 10^{-2}]$ & Todos los modelos \\
+\code{weight\_decay} & Log-Uniforme & $[1.0 \times 10^{-8}, 1.0 \times 10^{-3}]$ & Todos los modelos \\
+\code{batch\_size} & Categórica & $\{16, 32, 64, 128\}$ & Todos los modelos \\
+\code{dropout} & Uniforme & $[0.0, 0.5]$ & Todos los modelos \\
+\code{hidden\_size} & Entero (step 16) & $[32, 256]$ & LSTM, GRU, CNN-LSTM, xLSTM \\
+\code{num\_layers} & Entero & $[1, 4]$ & LSTM, GRU, CNN-LSTM, Transformer, PatchTST, xLSTM \\
+\code{conv\_channels} & Entero (step 16) & $[32, 128]$ & CNN-LSTM \\
+\code{kernel\_size} & Categórica & $\{3, 5, 7\}$ & CNN-LSTM, TCN \\
+\code{num\_heads} & Categórica & $\{2, 4, 8\}$ & Transformer, PatchTST \\
+\code{d\_model} & Proyección & $\text{num\_heads} \times k$, $k \in \{8, 12, 16, 24\}$ & Transformer, PatchTST \\
+\code{patch\_len} & Categórica & $\{16, 24, 32, 48\}$ & PatchTST \\
+\code{stride} & Categórica & $\{4, 6, 8, 12\}$ & PatchTST \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Mejores Configuraciones Encontradas (Optuna v2)}
+\label{sec:ap_mejores_configs}
+
+La Tabla~\ref{tab:optuna_mejores_valores} detalla los hiperparámetros óptimos resultantes tras completar las 100 iteraciones de búsqueda bayesiana para cada arquitectura neuronal:
+
+\begin{table}[H]
+\centering
+\caption{Mejores hiperparámetros encontrados en el estudio Optuna v2.}
+\label{tab:optuna_mejores_valores}
+\scriptsize
+\begin{tabularx}{\linewidth}{@{}lXcccccc@{}}
+\toprule
+\textbf{Modelo} & \textbf{Optimizador} & \textbf{LR ($\eta$)} & \textbf{Weight Decay} & \textbf{Batch} & \textbf{Layers} & \textbf{Hidden / Dim} & \textbf{Dropout} \\
+\midrule
+\textbf{Custom GRU} & RMSprop ($\alpha=0.93$) & $6.29 \times 10^{-4}$ & $2.50 \times 10^{-6}$ & 32 & 2 & 240 & 0.350 \\
+\textbf{Custom \xlstm{}} & Adam & $4.05 \times 10^{-3}$ & $2.48 \times 10^{-4}$ & 64 & 3 & 160 & 0.002 \\
+\textbf{Custom LSTM} & RMSprop ($\alpha=0.95$) & $9.72 \times 10^{-4}$ & $1.77 \times 10^{-6}$ & 32 & 1 & 144 & 0.485 \\
+Custom CNN-LSTM & AdamW & $4.35 \times 10^{-3}$ & $7.48 \times 10^{-5}$ & 64 & 2 & $C_{\text{conv}}=112, H=96$ & 0.142 \\
+Custom TCN & Adam & $2.87 \times 10^{-4}$ & $4.50 \times 10^{-5}$ & 64 & 4 & Channels: [32, 64, 64, 128] & 0.371 \\
+Custom Transformer & Adam & $8.09 \times 10^{-3}$ & $8.55 \times 10^{-4}$ & 128 & 3 & $d_{\text{model}}=64, \text{heads}=2$ & 0.395 \\
+Custom \patchtst{} & AdamW & $3.06 \times 10^{-4}$ & $1.37 \times 10^{-7}$ & 64 & 5 & $P=32, S=6, d_{\text{model}}=60$ & 0.208 \\
+\bottomrule
+\end{tabularx}
+\end{table}

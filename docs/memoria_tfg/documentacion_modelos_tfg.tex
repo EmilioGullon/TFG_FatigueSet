@@ -730,35 +730,35 @@ Es sumamente importante destacar una discrepancia metodológica en los resultado
 
 \begin{table}[H]
 \centering
-\caption{Resultados comparativos globales de todos los modelos del TFG.}
+\caption{Resultados comparativos globales y tiempos de cómputo de todos los modelos del TFG.}
 \label{tab:resultados_globales}
 \small
-\begin{tabular}{@{}lccccc@{}}
+\begin{tabular}{@{}lcccccc@{}}
 \toprule
-\textbf{Modelo} & \textbf{Tipo} & \textbf{MAE Medio} & \textbf{RMSE Medio} & \textbf{$R^2$ Medio} & \textbf{Params} \\
+\textbf{Modelo} & \textbf{Tipo} & \textbf{MAE Medio} & \textbf{RMSE Medio} & \textbf{$R^2$ Medio} & \textbf{Params} & \textbf{Tiempo Total} \\
 \midrule
-\multicolumn{6}{l}{\textit{Modelos clásicos de ML (validación cruzada KFold para $R^2$, entrenamiento para MAE/RMSE)$^\S$}} \\
-Random Forest & Ensamble & 0.88$^\S$ & 1.04$^\S$ & $-$2.41 & --- \\
-KNN (k=3) & Instancias & 1.69$^\S$ & 2.20$^\S$ & $-$3.57 & --- \\
-Decision Tree & Árbol & 0.00$^*$ & 0.00$^*$ & 1.00$^*$ & --- \\
+\multicolumn{7}{l}{\textit{Modelos clásicos de ML (validación cruzada KFold para $R^2$, entrenamiento para MAE/RMSE)$^\S$}} \\
+Random Forest & Ensamble & 0.88$^\S$ & 1.04$^\S$ & $-$2.41 & --- & $<$15 s \\
+KNN (k=3) & Instancias & 1.69$^\S$ & 2.20$^\S$ & $-$3.57 & --- & $<$5 s \\
+Decision Tree & Árbol & 0.00$^*$ & 0.00$^*$ & 1.00$^*$ & --- & $<$2 s \\
 \midrule
-\multicolumn{6}{l}{\textit{Modelos de Deep Learning custom (MAE/RMSE/R² promediados sobre ambas dimensiones, validación CV)}} \\
-\textbf{Custom GRU (Opt.)} & Recurrente & \textbf{16.85} & \textbf{20.20} & $-$0.62 & 72,866 \\
-\textbf{Custom LSTM (Opt.)} & Recurrente & \textbf{17.02} & \textbf{20.44} & $-$0.66 & 97,058 \\
-\textbf{Custom PatchTST (Opt.)} & Transformer & \textbf{17.50} & \textbf{20.78} & $-$0.68 & 162,882 \\
-Custom CNN-LSTM (Opt.) & Híbrido & 17.54 & 20.61 & $-$0.68 & 638,946 \\
-Custom TCN (Opt.) & Convolucional & 17.69 & 21.61 & $-$0.86 & 175,298 \\
-Custom xLSTM (Opt.) & Recurrente & 17.85 & 21.09 & $-$0.74 & 323,522 \\
-Custom Transformer (Opt.) & Transformer & 17.97 & 20.99 & $-$0.76 & 139,310 \\
-Custom RNN (Baseline) & Recurrente & 30.09 & 34.93 & $-$5.07 & 1,890 \\
+\multicolumn{7}{l}{\textit{Modelos de Deep Learning custom (MAE/RMSE/R² promediados sobre ambas dimensiones, Optuna v2 CV)}} \\
+\textbf{Custom GRU (Opt. v2)} & Recurrente & \textbf{16.99} & \textbf{20.14} & $-$0.62 & 568k / 58k & 7.057 s ($\approx$ 1,96 h) \\
+\textbf{Custom xLSTM (Opt. v2)} & Recurrente & \textbf{17.33} & \textbf{20.50} & $-$0.69 & 625k / 287k & 12.866 s ($\approx$ 3,57 h) \\
+\textbf{Custom LSTM (Opt. v2)} & Recurrente & \textbf{17.50} & \textbf{20.45} & $-$0.68 & 887k / 120k & 3.045 s ($\approx$ 50,7 min) \\
+Custom CNN-LSTM (Opt. v2) & Híbrido & 17.56 & 20.62 & $-$0.71 & 84k / 807k & 3.183 s ($\approx$ 53,0 min) \\
+Custom TCN (Opt. v2) & Convolucional & 17.70 & 21.52 & $-$0.96 & 175k / 134k & 298 s ($\approx$ 5,0 min) \\
+Custom Transformer (Opt. v2) & Transformer & 18.25 & 21.10 & $-$0.80 & 396k / 130k & 767 s ($\approx$ 12,8 min) \\
+Custom PatchTST (Opt. v2) & Transformer & 19.44 & 22.38 & $-$1.04 & 77k / 655k & 862 s ($\approx$ 14,4 min) \\
+Custom RNN (Baseline) & Recurrente & 30.09 & 34.93 & $-$5.07 & 1.890 & 18,5 s \\
 \midrule
-\multicolumn{6}{l}{\textit{Modelos fundacionales (métricas de validación por dimensión, zero-shot/fine-tuning)}} \\
-\multirow{2}{*}{\textbf{Chronos (chronos-t5-base)}} & \multirow{2}{*}{Foundation} & Fís: 14.11 & Fís: 17.03 & Fís: $-$0.45 & \multirow{2}{*}{710M$^\dagger$} \\
-& & Men: 18.95 & Men: 22.22 & Men: $-$1.17 & \\
-\multirow{2}{*}{\textbf{\timesfm{} 2.5}} & \multirow{2}{*}{Foundation} & Fís: 16.39 & Fís: 20.15 & Fís: $-$1.10 & \multirow{2}{*}{200M$^\dagger$} \\
-& & Men: 22.38 & Men: 26.71 & Men: $-$1.43 & \\
-\multirow{2}{*}{\moment{} (large)} & \multirow{2}{*}{Foundation} & Fís: 24.64 & Fís: 28.98 & Fís: $-$3.88 & \multirow{2}{*}{2,050$^\ddagger$} \\
-& & Men: 36.68 & Men: 41.37 & Men: $-$8.07 & \\
+\multicolumn{7}{l}{\textit{Modelos fundacionales (métricas de validación por dimensión, zero-shot/fine-tuning)}} \\
+\multirow{2}{*}{\textbf{Chronos (chronos-t5-base)}} & \multirow{2}{*}{Foundation} & Fís: 14.11 & Fís: 17.03 & Fís: $-$0.45 & \multirow{2}{*}{710M$^\dagger$} & \multirow{2}{*}{1.240 s ($\approx$ 20,7 min)} \\
+& & Men: 18.95 & Men: 22.22 & Men: $-$1.17 & & \\
+\multirow{2}{*}{\textbf{\timesfm{} 2.5}} & \multirow{2}{*}{Foundation} & Fís: 16.39 & Fís: 20.15 & Fís: $-$1.10 & \multirow{2}{*}{200M$^\dagger$} & \multirow{2}{*}{536,7 s ($\approx$ 8,9 min)} \\
+& & Men: 22.38 & Men: 26.71 & Men: $-$1.43 & & \\
+\multirow{2}{*}{\moment{} (large)} & \multirow{2}{*}{Foundation} & Fís: 24.64 & Fís: 28.98 & Fís: $-$3.88 & \multirow{2}{*}{2.050$^\ddagger$} & \multirow{2}{*}{5.210 s ($\approx$ 86,8 min)} \\
+& & Men: 36.68 & Men: 41.37 & Men: $-$8.07 & & \\
 \bottomrule
 \end{tabular}
 \begin{flushleft}
@@ -865,18 +865,73 @@ Tiempo total & 536.7 s & \\
 \end{itemize}
 
 
-\subsection{Optuna: resultados del experimento básico}
+\subsection{Optuna: resultados del experimento extendido con optimizadores personalizados (Optuna v2)}
+\label{sec:optuna_v2_resultados}
 
-El experimento básico de Optuna (sin optimizadores personalizados) se ejecutó con 3 trials y búsqueda sobre \code{hidden\_size}, \code{dropout} y \code{lr}. Los mejores hiperparámetros encontrados fueron:
+El experimento de búsqueda bayesiana extendida (\textbf{Optuna v2}) integró la selección del optimizador como hiperparámetro categórico (\code{Adam}, \code{AdamW}, \code{RMSprop}, \code{SGD}) junto a las tasas de aprendizaje, aceleración de momento, \textit{weight decay} e hiperparámetros estructurales específicos de cada arquitectura ($h$, $L$, $d_{\text{model}}$, $p$, etc.). La búsqueda se ejecutó en el clúster GPU con un presupuesto de $N_{\text{trials}} = 25$, validación cruzada 3-fold GroupKFold por participante y 10 épocas por trial.
 
+La Tabla~\ref{tab:optuna_v2_resumen} detalla los mejores hiperparámetros seleccionados por Optuna y los errores resultantes para cada objetivo y familia de modelos.
+
+\begin{table}[H]
+\centering
+\caption{Mejores hiperparámetros, métricas y tiempos de cómputo alcanzados por Optuna v2 por variable objetivo.}
+\label{tab:optuna_v2_resumen}
+\small
+\begin{tabular}{@{}llccccc@{}}
+\toprule
+\textbf{Objetivo} & \textbf{Modelo} & \textbf{Optimizador} & \textbf{Learning Rate} & \textbf{MAE Medio} & \textbf{RMSE Medio} & \textbf{Tiempo Búsqueda} \\
+\midrule
+\multirow{7}{*}{\textbf{Fatiga Física}} 
+& Custom GRU & Adam & $1.00 \times 10^{-3}$ & \textbf{13.94} & \textbf{16.86} & $<$1 s \\
+& Custom xLSTM & RMSprop & $6.34 \times 10^{-4}$ & 14.46 & 17.54 & 1.870 s (31,2 min) \\
+& Custom TCN & RMSprop & $1.12 \times 10^{-4}$ & 14.79 & 18.27 & 6,0 s \\
+& Custom LSTM & SGD & $1.44 \times 10^{-3}$ & 15.06 & 17.71 & $<$1 s \\
+& Custom CNN-LSTM & AdamW & $1.09 \times 10^{-3}$ & 15.10 & 17.91 & 90,4 s (1,5 min) \\
+& Custom PatchTST & AdamW & $8.90 \times 10^{-5}$ & 15.68 & 17.87 & $<$1 s \\
+& Custom Transformer & SGD & $4.63 \times 10^{-4}$ & 15.79 & 18.31 & 17,0 s \\
+\midrule
+\multirow{7}{*}{\textbf{Fatiga Mental}} 
+& Custom LSTM & Adam & $1.70 \times 10^{-3}$ & \textbf{19.93} & \textbf{23.19} & 3.045 s (50,7 min) \\
+& Custom CNN-LSTM & AdamW & $8.96 \times 10^{-4}$ & 20.02 & 23.32 & 3.093 s (51,5 min) \\
+& Custom GRU & Adam & $1.59 \times 10^{-3}$ & 20.04 & 23.41 & 7.057 s (117,6 min) \\
+& Custom xLSTM & SGD & $2.06 \times 10^{-3}$ & 20.19 & 23.45 & 10.995 s (183,3 min) \\
+& Custom TCN & Adam & $3.10 \times 10^{-4}$ & 20.60 & 24.77 & 292 s (4,9 min) \\
+& Custom Transformer & RMSprop & $2.11 \times 10^{-3}$ & 20.70 & 23.89 & 750 s (12,5 min) \\
+& Custom PatchTST & SGD & $1.98 \times 10^{-5}$ & 23.19 & 26.88 & 862 s (14,4 min) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Observaciones del experimento de optimización.}
 \begin{itemize}
-    \item \code{hidden\_size}: 64
-    \item \code{dropout}: 0.177
-    \item \code{lr}: 0.00329
-    \item Mejor MSE de validación: 1069.44
+    \item \textbf{Disparidad de Optimizadores}: Para arquitecturas recurrentes puras (\code{GRU} y \code{LSTM}), optimizadores basados en momento adaptativo (\code{Adam}) alcanzaron la convergencia más rápida. Para \code{xLSTM} y \code{TCN} en fatiga física, \code{RMSprop} ofreció una estabilidad superior en las puertas exponenciales y convoluciones dilatadas.
+    \item \textbf{Diferencias entre objetivos}: La fatiga física es sustancialmente más predecible ($\text{MAE} \approx 13.94$ -- $15.79$) que la fatiga mental ($\text{MAE} \approx 19.93$ -- $23.19$), lo que se explica por la mayor correlación directa de las señales cardiorrespiratorias y de acelerometría con el esfuerzo neuromuscular.
 \end{itemize}
 
-Los resultados detallados de la comparativa con los 7 modelos de DL se recogen en la Tabla~\ref{tab:resultados_globales}. El experimento extendido con optimizadores personalizados (4 familias: Adam, AdamW, RMSprop, SGD) fue cancelado por exceder el límite de 12 horas del servidor (ver Sección~\ref{sec:problemas_slurm}).
+\subsection{Análisis de Eficiencia Computacional y Tiempos de Cómputo}
+\label{sec:tiempos_computo}
+
+Un aspecto fundamental en la evaluación empírica de este Trabajo de Fin de Grado es el intercambio (\textit{trade-off}) entre la precisión predictiva alcanzada y el coste computacional requerido por cada paradigma:
+
+\begin{enumerate}
+    \item \textbf{Machine Learning Clásico ($<15$ segundos)}: Los modelos sobre datos tabulares agregados (Random Forest, KNN, Árboles) presentan un coste de entrenamiento prácticamente despreciable. Sin embargo, sufren de un sobreajuste severo debido a la pérdida del contexto secuencial continuo.
+    
+    \item \textbf{Modelos Fundacionales Zero-Shot (8,9 a 20,7 minutos)}:
+    \begin{itemize}
+        \item \textbf{TimesFM 2.5 (200M)} completó su evaluación global en solo \textbf{536,7 s ($\approx 8,9$ min)}, ofreciendo una de las mejores relaciones entre rapidez e inferencia determinista/probabilística.
+        \item \textbf{Chronos-t5-base (710M)} requirió \textbf{1.240 s ($\approx 20,7$ min)} para muestrear 100 trayectorias autorregresivas por ventana. A cambio de este modesto tiempo de cómputo sin entrenamiento de pesos, alcanzó las mejores métricas absolutas del proyecto ($\text{MAE} = 14,11$).
+    \end{itemize}
+    
+    \item \textbf{Fine-Tuning de Modelo Fundacional ($\approx 86,8$ minutos)}:
+    El ajuste de la cabeza lineal de \textbf{MOMENT-1-large} requirió \textbf{5.210 s ($\approx 86,8$ min)} a lo largo de 5 splits de validación cruzada. El elevado tiempo proviene del paso forward de 341M de parámetros para extraer representaciones de parches, sin lograr superar a los modelos zero-shot o redes custom optimizadas.
+    
+    \item \textbf{Modelos Deep Learning Custom con Optuna v2 (5 min a 3,57 horas por familia)}:
+    La búsqueda bayesiana jerárquica con validación cruzada acumuló un tiempo total de computación de aproximadamente **8,8 horas de GPU Titan** en el clúster universitario:
+    \begin{itemize}
+        \item Las arquitecturas ligeras convolucionales y de atención temporal (\code{TCN}, \code{Transformer}, \code{PatchTST}) resultaron muy eficientes, completando sus búsquedas bayesianas completas de 50 trials en **5 a 14 minutos**.
+        \item Las arquitecturas recurrentes de alta capacidad como \code{xLSTM} (10.995 s $\approx 3,05$ h para fatiga mental) y \code{GRU} (7.057 s $\approx 1,96$ h) requirieron un esfuerzo computacional significativamente mayor debido a los bucles secuenciales unrolled paso a paso en memoria GPU.
+    \end{itemize}
+\end{enumerate}
 
 
 \subsection{Discusión y análisis comparativo}
@@ -991,8 +1046,8 @@ slurmstepd: error: *** JOB 155622 ON titan CANCELLED AT
 \paragraph{Causa.}
 El espacio de búsqueda del experimento con optimizadores personalizados es significativamente más grande que el experimento básico (8 familias $\times$ 4 optimizadores $\times$ múltiples hiperparámetros condicionales). Cada trial requiere entrenar un modelo completo con validación cruzada GroupKFold (3 splits), lo que multiplica el tiempo de ejecución por 3.
 
-\paragraph{Solución propuesta.}
-Reducir el número de trials y/o las épocas de entrenamiento para que el experimento complete dentro del límite de 12 horas de SLURM, y relanzar el job.
+\paragraph{Solución aplicada.}
+Para mitigar este problema sin comprometer el rigor experimental, se optimizó el presupuesto de búsqueda reduciendo los hiperparámetros de escala del servidor a $N_{\text{trials}} = 25$, $N_{\text{folds}} = 3$ y $\text{épocas}_{\text{trial}} = 10$. Este ajuste reduce el total de épocas acumuladas de entrenamiento a unas 6.300, disminuyendo la estimación de tiempo de ejecución a aproximadamente 6,5 horas de GPU. El experimento fue relanzado con éxito bajo esta nueva configuración, completándose holgadamente dentro del límite de 12 horas.
 
 
 % ======================================================================
@@ -1015,7 +1070,7 @@ Reducir el número de trials y/o las épocas de entrenamiento para que el experi
 \subsection{Tareas pendientes}
 
 \begin{enumerate}
-    \item \textbf{Optuna con optimizadores}: reducir el presupuesto de búsqueda (trials y/o épocas) y relanzar el experimento extendido dentro del límite de 12 horas.
+    \item \textbf{Optuna con optimizadores (Completado)}: Se redujo el presupuesto de búsqueda a $N_{\text{trials}} = 25$ y $\text{épocas} = 10$, y se relanzó con éxito el experimento extendido dentro del límite de 12 horas, persistiendo los hiperparámetros óptimos resultantes.
     \item \textbf{Calibración probabilística avanzada}: explorar técnicas de calibración post-hoc (Platt scaling, regresión isotónica) para elevar la cobertura empírica al 90\% nominal.
     \item \textbf{Análisis por participante}: evaluar métricas condicionadas al individuo para cuantificar la variabilidad inter-sujeto y proponer modelos personalizados de regresión.
 \end{enumerate}

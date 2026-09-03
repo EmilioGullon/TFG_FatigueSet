@@ -1,0 +1,196 @@
+% ======================================================================
+% CAPÍTULO 5: METODOLOGÍA EXPERIMENTAL Y BENCHMARKING (EXPANDIDO)
+% ======================================================================
+
+\chapter{Metodología Experimental y Benchmarking}
+\label{cap:experimentacion}
+
+\section{Metodología Basada en el Método Científico}
+\label{sec:exp_metodo}
+
+De acuerdo con los estándares epistemológicos de la investigación en Ciencias de la Computación y Aprendizaje Automático \cite{chalmers2013what, guillen2025libro}, la fase experimental de este Trabajo de Fin de Grado se articula en torno a las etapas formales del método científico experimental (Figura~\ref{fig:metodo_cientifico_diagrama}).
+
+\begin{figure}[htbp]
+    \centering
+    \resizebox{0.92\linewidth}{!}{%
+    \begin{tikzpicture}[node distance=0.7cm, auto,
+        state/.style={rectangle, draw=etsiitblue, fill=blue!6, rounded corners, text width=4.2cm, text centered, minimum height=0.9cm, font=\scriptsize},
+        decision/.style={diamond, draw=ugrred, fill=red!6, text width=2.0cm, text centered, inner sep=0pt, aspect=1.8, font=\scriptsize},
+        conclstate/.style={rectangle, draw=darkgreen, fill=green!8, rounded corners, text width=4.2cm, text centered, minimum height=0.9cm, font=\scriptsize},
+        replantstate/.style={rectangle, draw=ugrred, fill=red!6, rounded corners, text width=4.2cm, text centered, minimum height=0.9cm, font=\scriptsize},
+        line/.style={draw=darkblue, -latex', thick}]
+        
+        % Fila 1: Planteamiento teórico inicial
+        \node [state] (q) {\textbf{1. Pregunta de Investigación}\\\tiny ¿Qué arquitecturas modelan mejor bioseñales?};
+        \node [state, right=0.8cm of q] (sota) {\textbf{2. Estado del Arte}\\\tiny Detección de gaps y taxonomía};
+        \node [state, right=0.8cm of sota] (hip) {\textbf{3. Hipótesis Científicas}\\\tiny Formulación formal $H_1, H_2, H_3$};
+        
+        % Fila 2: Fase experimental y análisis
+        \node [state, below=0.8cm of hip] (exp) {\textbf{4. Diseño Experimental}\\\tiny GroupKFold + Optuna + Clúster GPU};
+        \node [state, below=0.8cm of sota] (res) {\textbf{5. Análisis de Resultados}\\\tiny Métricas $R^2$, MAE, RMSE, Pearson $r$};
+        
+        % Fila 3: Evaluación crítica y bifurcación
+        \node [decision, below=0.8cm of res] (val) {¿Hipótesis\\confirmadas?};
+        \node [conclstate, left=0.8cm of val] (concl) {\textbf{6. Conclusiones y ODS}\\\tiny Transferencia e impacto};
+        \node [replantstate, right=0.8cm of val] (replantear) {\textbf{Reevaluación Crítica}\\\tiny Estudio de limitaciones};
+        
+        % Conexiones del flujo principal
+        \path [line] (q) -- (sota);
+        \path [line] (sota) -- (hip);
+        \path [line] (hip) -- (exp);
+        \path [line] (exp) -- (res);
+        \path [line] (res) -- (val);
+        
+        % Bifurcación
+        \path [line] (val) -- node [above, font=\scriptsize\bfseries] {Sí} (concl);
+        \path [line] (val) -- node [above, font=\scriptsize\bfseries] {No} (replantear);
+        
+        % Bucle de retroalimentación ortogonal sin cruces
+        \path [line] (replantear.east) -- ++(0.5,0) |- node [near end, right, font=\tiny\bfseries] {Reformulación} (hip.east);
+    \end{tikzpicture}%
+    }
+    \caption{Ciclo metodológico del método científico aplicado a la experimentación del TFG: flujo secuencial riguroso y retroalimentación ortogonal.}
+    \label{fig:metodo_cientifico_diagrama}
+\end{figure}
+
+\subsection{Formulación de Hipótesis Científicas}
+
+A partir de la revisión del estado del arte realizada en el Capítulo~\ref{cap:estado_del_arte}, se plantean tres hipótesis de trabajo formales:
+
+\begin{hipotesis}[\textbf{Superioridad del Modelado Temporal Profundo}]
+\label{hip:h1}
+Las redes neuronales profundas que modelan explícitamente la dinámica temporal secuencial (LSTM, GRU, TCN, \xlstm{}) presentan una capacidad de generalización sobre participantes no vistos significativamente superior a la de los modelos clásicos de Machine Learning basados en características tabulares agregadas.
+\end{hipotesis}
+
+\begin{hipotesis}[\textbf{Estabilidad y Eficacia de la Celda sLSTM de xLSTM}]
+\label{hip:h2}
+El mecanismo de compuertas exponenciales y normalización logarítmica ($m_t, n_t$) de la celda estabilizada \slstm{} permite una convergencia más rápida y un menor error cuadrático medio en la regresión de fatiga multicanal frente a la arquitectura clásica LSTM con compuertas sigmoides.
+\end{hipotesis}
+
+\begin{hipotesis}[\textbf{Capacidad y Limitaciones de los Modelos Fundacionales}]
+\label{hip:h3}
+Los Modelos Fundacionales preentrenados a gran escala (\chronos{}, \timesfm{}, \moment{}) demuestran capacidades predictivas viables en régimen \textit{zero-shot} sobre bioseñales, pero su precisión bruta es superada por modelos recurrentes ligeros optimizados bayesianamente sobre el dominio específico, incurriendo además los primeros en un coste computacional sensiblemente mayor.
+\end{hipotesis}
+
+
+% ======================================================================
+\section{Protocolo de Validación Cruzada GroupKFold por Participante}
+\label{sec:exp_groupkfold}
+% ======================================================================
+
+Uno de los errores metodológicos más graves y recurrentes en la literatura de bioseñales y computación vestible es la \textbf{fuga de datos inter-sujeto (\textit{subject data leakage})} \cite{kalanadhabhatta2022fatigueset}. 
+
+Si las ventanas temporales generadas a partir de las sesiones de un mismo sujeto se distribuyen aleatoriamente entre el conjunto de entrenamiento y el conjunto de validación (mediante un \textit{K-Fold} convencional o división aleatoria simple), el modelo neuronal tiende a memorizar los patrones fisiológicos basales, la morfología específica del ECG o la impedancia de la piel del individuo en lugar de aprender representaciones universales de la fatiga. Esto conduce a un sobreajuste severo y a métricas de rendimiento ilusoriamente optimistas que colapsan al aplicar el sistema sobre nuevos usuarios en la práctica real.
+
+Para erradicar de forma estricta este problema, en este trabajo se establece un protocolo inmutable de \textbf{Validación Cruzada Estratificada por Grupos (\textit{GroupKFold Cross-Validation})} con $K=5$ particiones:
+\begin{equation}
+    \mathcal{D} = \bigcup_{k=1}^5 \mathcal{F}_k, \quad \mathcal{S}(\mathcal{F}_i) \cap \mathcal{S}(\mathcal{F}_j) = \emptyset \quad \forall i \ne j
+\end{equation}
+donde $\mathcal{S}(\mathcal{F}_k)$ representa el conjunto de identificadores de participantes asignados al fold $k$. En cada iteración $k$, los modelos se entrenan exclusivamente sobre las ventanas de los participantes en $\mathcal{D} \setminus \mathcal{F}_k$ y se evalúan a ciegas sobre los participantes inéditos de $\mathcal{F}_k$. La Tabla~\ref{tab:groupkfold_splits} detalla la partición exacta de participantes y la distribución porcentual de muestras entre conjuntos en cada uno de los 5 pliegues de evaluación.
+
+\begin{table}[htbp]
+\centering
+\caption{Asignación de participantes y distribución de particiones en GroupKFold ($K=5$).}
+\label{tab:groupkfold_splits}
+\small
+\begin{tabularx}{\linewidth}{@{}ccXX@{}}
+\toprule
+\textbf{Fold} & \textbf{Participantes en Test/Val} & \textbf{Participantes en Train} & \textbf{Distribución Muestral} \\
+\midrule
+Fold 1 & P01, P02 & P03, P04, P05, P06, P07, P08, P09, P10, P11, P12 & 18.2\% Val / 81.8\% Train \\
+Fold 2 & P03, P04 & P01, P02, P05, P06, P07, P08, P09, P10, P11, P12 & 17.5\% Val / 82.5\% Train \\
+Fold 3 & P05, P06 & P01, P02, P03, P04, P07, P08, P09, P10, P11, P12 & 19.1\% Val / 80.9\% Train \\
+Fold 4 & P07, P08 & P01, P02, P03, P04, P05, P06, P09, P10, P11, P12 & 21.0\% Val / 79.0\% Train \\
+Fold 5 & P09, P10, P11, P12 & P01, P02, P03, P04, P05, P06, P07, P08 & 24.2\% Val / 75.8\% Train \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+
+% ======================================================================
+\section{Métricas de Evaluación Multiobjetivo}
+\label{sec:exp_metricas}
+% ======================================================================
+
+Dado que el problema se formula como una regresión multivariada continua de dos dimensiones $\bm{y} = [y_{\text{física}}, y_{\text{mental}}]^T \in [0, 100]^2$, se calculan las siguientes métricas para cada dimensión $d \in \{\text{física}, \text{mental}\}$ sobre los $N$ ejemplos del conjunto de validación:
+
+\subsection{Error Absoluto Medio (MAE)}
+Cuantifica la magnitud media de los errores en la escala original de la variable (puntos VAS de 0 a 100):
+\begin{equation}
+    \text{MAE}^{(d)} = \frac{1}{N} \sum_{i=1}^N \left| y_i^{(d)} - \hat{y}_i^{(d)} \right|
+\end{equation}
+
+\subsection{Raíz del Error Cuadrático Medio (RMSE)}
+Penaliza de forma cuadrática las desviaciones de gran magnitud, siendo un indicador clave de robustez ante fallos atípicos:
+\begin{equation}
+    \text{RMSE}^{(d)} = \sqrt{\frac{1}{N} \sum_{i=1}^N \left( y_i^{(d)} - \hat{y}_i^{(d)} \right)^2}
+\end{equation}
+
+\subsection{Coeficiente de Determinación ($R^2$)}
+Evalúa la proporción de la varianza de la variable dependiente explicada por el modelo predictivo frente al estimador trivial de la media $\bar{y}^{(d)}$:
+\begin{equation}
+    R^{2\,(d)} = 1 - \frac{\sum_{i=1}^N \left( y_i^{(d)} - \hat{y}_i^{(d)} \right)^2}{\sum_{i=1}^N \left( y_i^{(d)} - \bar{y}^{(d)} \right)^2}
+\end{equation}
+En validación cruzada inter-sujeto con alta variabilidad, valores de $R^2 < 0$ indican que el error cuadrático del modelo es superior a la varianza de los datos en ese fold específico, un fenómeno ampliamente documentado en problemas biomédicos complejos con cohortes reducidas \cite{kalanadhabhatta2022fatigueset}.
+
+\subsection{Coeficiente de Correlación de Pearson ($r$)}
+Mide la correlación lineal entre los valores reales y las predicciones, evaluando si el modelo captura la tendencia ascendente o descendente de la fatiga con independencia de sesgos de escala global:
+\begin{equation}
+    r^{(d)} = \frac{\sum_{i=1}^N (y_i^{(d)} - \bar{y}^{(d)})(\hat{y}_i^{(d)} - \bar{\hat{y}}^{(d)})}{\sqrt{\sum_{i=1}^N (y_i^{(d)} - \bar{y}^{(d)})^2} \sqrt{\sum_{i=1}^N (\hat{y}_i^{(d)} - \bar{\hat{y}}^{(d)})^2}}
+\end{equation}
+
+\subsection{Métricas Probabilísticas (para Modelos Fundacionales)}
+Para los modelos que generan distribuciones predictivas completas (como \chronos{}), se evalúa el \textbf{Continuous Ranked Probability Score (CRPS)}:
+\begin{equation}
+    \text{CRPS}(F, y) = \int_{-\infty}^\infty \left( F(z) - \mathbb{I}(z \ge y) \right)^2 dz
+\end{equation}
+junto con la cobertura empírica del intervalo de predicción al 90\% ($PICP_{90}$):
+\begin{equation}
+    PICP_{90} = \frac{1}{N}\sum_{i=1}^N \mathbb{I}\left( \hat{y}_{i}^{0.05} \le y_i \le \hat{y}_{i}^{0.95} \right) \times 100\%
+\end{equation}
+
+
+% ======================================================================
+\section{Infraestructura de Computación en Servidor GPU y SLURM}
+\label{sec:exp_cluster}
+% ======================================================================
+
+El entrenamiento y benchmarking a gran escala de las arquitecturas profundas y los Modelos Fundacionales (cuyos tamaños oscilan entre 200 y 710 millones de parámetros) exige recursos computacionales de alto rendimiento.
+
+\subsection{Especificaciones del Clúster GPU de la Universidad de Granada}
+Los experimentos se ejecutaron en el nodo de computación \code{titan} del clúster de altas prestaciones de la UGR:
+\begin{itemize}
+    \item \textbf{Nodo de Acceso (Cabecera):} \code{ngpu.ugr.es} bajo GNU/Linux x86\_64.
+    \item \textbf{Aceleración Gráfica:} GPUs dedicadas NVIDIA con 12 GB de memoria VRAM de alta velocidad.
+    \item \textbf{Memoria de Sistema y Almacenamiento:} 32 GB de RAM asignados por \textit{job} en partición \code{dios} y almacenamiento persistente de 239 TB en red en \code{/mnt/homeGPU/\-egullonl01/}.
+    \item \textbf{Gestor de Carga de Trabajo:} SLURM (\textit{Simple Linux Utility for Resource Management}).
+\end{itemize}
+
+\subsection{Resolución de Desafíos de Ingeniería en el Clúster}
+Durante la fase de despliegue se identificaron y subsanaron tres retos operacionales críticos:
+\begin{enumerate}
+    \item \textbf{Superación de la Cuota de Disco en Directorio de Usuario:} Por defecto, las librerías HuggingFace y los runtimes de Jupyter escriben en \code{\textasciitilde{}/.cache/}, provocando el error \textit{Disk quota exceeded} debido al límite estricto de 5 GB en el directorio \code{HOME}. Se solucionó redirigiendo las variables de entorno de caché al almacenamiento persistente de red:
+\begin{lstlisting}[language=bash,breaklines=true,basicstyle=\footnotesize\ttfamily]
+export HF_HOME="/mnt/homeGPU/egullonl01/.cache/huggingface"
+export XDG_CACHE_HOME="/mnt/homeGPU/egullonl01/.cache"
+export IPYTHONDIR="/mnt/homeGPU/egullonl01/.ipython"
+export JUPYTER_RUNTIME_DIR=\
+  "/mnt/homeGPU/egullonl01/.local/share/jupyter/runtime"
+\end{lstlisting}
+    \item \textbf{Fugas de Memoria VRAM entre Modelos:} PyTorch no devuelve inmediatamente la memoria reservada al driver mientras el proceso principal siga activo. Para evitar errores \textit{CUDA Out of Memory} (OOM) en benchmarks continuos, se programó la ejecución secuencial de cada familia de modelos en procesos limpios e independientes mediante \code{jupyter nbconvert --execute --inplace}.
+    \item \textbf{Límites de Tiempo en SLURM (12h máximo):} Se implementó un sistema de persistencia en disco de puntos de control (\textit{checkpoints}) por época y almacenamiento en base de datos SQLite (\code{optuna\_v2.db}) con soporte multi-hilo para permitir la reanudación transparente de estudios interrumpidos.
+\end{enumerate}
+
+
+% ======================================================================
+\section{Diseño de las Cuatro Fases Experimentales}
+\label{sec:exp_fases}
+% ======================================================================
+
+El plan experimental se organizó en cuatro fases progresivas de complejidad creciente:
+\begin{itemize}
+    \item \textbf{Fase 1 (Baselines Clásicos de Machine Learning):} Evaluación de Random Forest (100 árboles), K-Nearest Neighbors ($k=3$), Árbol de Decisión, Ridge y SVR sobre vectores de características agregadas por ventana.
+    \item \textbf{Fase 2 (Redes Neuronales Recurrentes Base):} Evaluación de RNN simple, LSTM clásica y GRU con optimización de hiperparámetros.
+    \item \textbf{Fase 3 (Arquitecturas Avanzadas de Series Temporales):} Búsqueda bayesiana con Optuna sobre CNN-LSTM, TCN (convoluciones causales dilatadas), Transformer, \patchtst{} y la nueva arquitectura \xlstm{} (celda \slstm{} estabilizada).
+    \item \textbf{Fase 4 (Modelos Fundacionales de Series Temporales):} Evaluación comparativa de \moment{}-1-large (fine-tuning de cabeza lineal), \chronos{}-t5-base (zero-shot probabilístico) y \timesfm{} 2.5 (zero-shot causal con probe de salida).
+\end{itemize}

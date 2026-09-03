@@ -1,0 +1,388 @@
+% ======================================================================
+% CAPÍTULO 2: ESTADO DEL ARTE Y MARCO TEÓRICO (EXPANDIDO Y RESTRUCTURADO)
+% ======================================================================
+
+\chapter{Estado del Arte y Marco Teórico}
+\label{cap:estado_del_arte}
+
+\section{Metodología de la Revisión Bibliográfica y Preguntas de Investigación}
+\label{sec:teoria_metodologia}
+
+Una revisión rigurosa del estado del arte en la ingeniería informática no debe ser una mera recopilación pasiva o resumen inconexo de publicaciones previas. Siguiendo las directrices metodológicas de la investigación científica en ciencias de la computación \cite{guillen2025libro}, este capítulo adopta un enfoque analítico, sintético y evaluativo orientado a mapear el conocimiento actual, identificar las limitaciones y lagunas existentes en la literatura biomédica, y fundamentar la posición diferencial del presente Trabajo de Fin de Grado.
+
+\subsection{Preguntas de Investigación (PI)}
+
+Para estructurar la búsqueda bibliográfica y orientar el análisis crítico, se formularon cuatro preguntas de investigación principales:
+\begin{description}[font=\bfseries, leftmargin=1.2cm]
+    \item[PI1:] \textit{¿Cómo se conceptualizan y cuantifican objetivamente los estados de fatiga física y mental mediante bioseñales fisiológicas capturadas por dispositivos vestibles non-invasivos?}
+    \item[PI2:] \textit{¿Cuáles son las limitaciones metodológicas de los algoritmos clásicos de Machine Learning frente a las arquitecturas profundas de aprendizaje secuencial en el modelado de series temporales multimodales?}
+    \item[PI3:] \textit{¿Puede la reciente arquitectura recurrente extendida (\xlstm{}) competir en precisión predictiva con los modelos de atención (Transformers) y redes recurrentes tradicionales (LSTM/GRU) manteniendo una huella computacional reducida apta para entornos embebidos?}
+    \item[PI4:] \textit{¿Hasta qué punto los Modelos Fundacionales preentrenados a gran escala sobre series temporales (\moment{}, \chronos{}, \timesfm{}) son capaces de transferir su conocimiento en régimen zero-shot o fine-tuning al dominio biomédico en comparación con modelos entrenados específicamente?}
+\end{description}
+
+\subsection{Estrategia de Búsqueda y Fuentes Bibliográficas}
+
+La recopilación de recursos se llevó a cabo consultando las principales bases de datos académicas e indizadas de prestigio internacional: IEEE Xplore, ACM Digital Library, PubMed/MEDLINE, Scopus, Web of Science y Google Scholar, complementadas con el catálogo institucional de la Universidad de Granada (Biblioteca UGR) y repositorios oficiales de preprints (arXiv).
+
+Las ecuaciones de búsqueda se construyeron combinando operadores booleanos y términos clave en inglés:
+\begin{center}
+\small
+\code{("mental fatigue" OR "physical fatigue" OR "fatigability") AND ("physiological signals" OR "multimodal wearables" OR "EEG" OR "HRV" OR "EDA") AND ("deep learning" OR "xLSTM" OR "time series foundation models" OR "Optuna")}
+\end{center}
+
+\subsection{Criterios de Inclusión y Exclusión}
+
+Se fijaron criterios explícitos para seleccionar únicamente fuentes de alta calidad científica:
+\begin{itemize}
+    \item \textbf{Criterios de Inclusión:} Artículos en revistas internacionales con revisión por pares (JCR/Scimago), actas de congresos de primer nivel (NeurIPS, ICML, ICLR, AAAI, IEEE TBME, PervasiveHealth), memorias técnicas contrastadas y datasets de acceso abierto con protocolos experimentales transparentes publicados entre 2015 y 2026.
+    \item \textbf{Criterios de Exclusión:} Publicaciones en blogs comerciales sin rigor científico, foros de opinión, artículos sin detalles suficientes para garantizar la reproducibilidad experimental, y trabajos que empleen cuestionarios exclusivamente subjetivos sin registro fisiológico objetivo.
+\end{itemize}
+
+
+
+\section{Fundamentación Fisiológica de la Fatiga Humana}
+\label{sec:teoria_fisiologia}
+
+La modelización computacional rigurosa de la fatiga psicofisiológica exige un análisis en profundidad de los sustratos biológicos, neuromusculares y corticales que la originan. En la literatura de neuroergonomía y fisiología del esfuerzo, la fatiga se conceptualiza como un proceso adaptativo multifactorial que surge de la interacción continua entre demandas ambientales y recursos homeostáticos \cite{enoka2008muscle, grandjean1979fatigue, boksem2005effects}. Se clasifica primariamente en dos vertientes:
+
+\subsection{Mecanismos de la Fatiga Física y Muscular (Periférica)}
+
+La fatiga física se define formalmente como la reducción reversible de la capacidad neuromuscular para generar tensión mecánica, fuerza isométrica o trabajo mecánico \cite{enoka2008muscle}. A nivel celular y bioquímico, los mecanismos limitantes se estructuran a lo largo de la vía de excitación-contracción:
+
+\begin{enumerate}
+    \item \textbf{Agotamiento de Fosfágenos y Glucógeno:} El esfuerzo contráctil continuo consume el trifosfato de adenosina (ATP) a una tasa que supera la fosforilación oxidativa mitocondrial. La rápida deplexión de la fosfocreatina (PCr) intramuscular limita la reesterificación de ADP a ATP, reduciendo la velocidad de los puentes cruzados de actina-miosina.
+    \item \textbf{Acidosis Metabólica e Inhibición Iónica:} La glucólisis anaeróbica incrementa la concentración de protones $H^+$, reduciendo el pH citoplasmático desde valores basales de $\approx 7.0$ hasta niveles inferiores a $6.5$. Esta acidosis inhibe alostéricamente la enzima fosfofructocinasa (PFK) y reduce la afinidad de los iones calcio ($Ca^{2+}$) por la subunidad troponina C.
+    \item \textbf{Desacoplamiento del Retículo Sarcoplásmico:} La actividad repetitiva altera la conductancia de los canales de liberación de calcio (receptores de rianodina, RyR1) y sobrecarga las bombas de recaptación SERCA, reduciendo la amplitud del calcio transitorio intracelular.
+    \item \textbf{Incompetencia Sarcolémica y Fallo en la Transmisión de la Placa Motora:} La acumulación extracelular de iones potasio ($K^+$) en los túbulos transversos despolariza la membrana sarcolémica, disminuyendo la amplitud del potencial de acción muscular y atenuando la señal electromiográfica de superficie.
+\end{enumerate}
+
+\subsection{Mecanismos de la Fatiga Mental y Carga Cognitiva (Central)}
+
+A diferencia de la claudicación muscular periférica, la fatiga mental es un estado psicofisiológico inducido por la demanda cognitiva prolongada e ininterrumpida que altera la eficiencia del control ejecutivo, la atención selectiva y la toma de decisiones \cite{boksem2005effects}.
+
+\begin{enumerate}
+    \item \textbf{Sobrecarga de la Red de Control Ejecutivo Frontoparietal:} Las áreas corticales superiores ---principalmente la corteza prefrontal dorsolateral (DLPFC), la corteza prefrontal ventromedial (VMPFC) y la corteza cingulada anterior (ACC)--- exhiben una disminución en su tasa metabólica regional de glucosa y oxígeno tras períodos prolongados de esfuerzo atencional sostenido.
+    \item \textbf{Hipótesis Neuroquímica del Acúmulo de Adenosina y Depleción de Monoaminas:} El metabolismo energético cerebral continuo genera un incremento progresivo de adenosina en el espacio sináptico basal. La activación de los receptores $A_1$ presinápticos y $A_{2A}$ postsinápticos inhibe la exocitosis de dopamina en el cuerpo estriado y de noradrenalina en el \textit{locus coeruleus}, reduciendo la motivación intrínseca y la velocidad de procesamiento sensoriomotor.
+    \item \textbf{Modelo Coste-Beneficio del Control Cognitivo:} Boksem y Tops \cite{boksem2005effects} postulan que la fatiga mental actúa como una señal de alarma adaptativa que evalúa el balance entre el esfuerzo invertido y la recompensa esperada. Cuando el coste cognitivo supera el beneficio percibido, el sistema atenúa la vigilancia y reasigna los recursos hacia la conservación homeostática.
+\end{enumerate}
+
+\subsection{Taxonomía de Fatiga: Estado, Rasgo, Somnolencia y Fatigabilidad}
+
+En el diseño experimental de sistemas de monitorización, resulta indispensable delimitar las cuatro dimensiones psicométricas fundamentales \cite{kalanadhabhatta2021fatigueset}:
+\begin{itemize}
+    \item \textbf{Fatiga de Estado (\textit{State Fatigue}):} Variación dinámica a corto plazo experimentada en respuesta a la tarea actual. Se evalúa mediante escalas instantáneas como la Escala Visual Analógica (VAS, $0 - 100$) o la Escala de Somnolencia de Stanford (SSS).
+    \item \textbf{Fatiga de Rasgo (\textit{Trait Fatigue}):} Propensión biológica estable y crónica de un sujeto a experimentar cansancio en su vida cotidiana, evaluada mediante la escala FSS (\textit{Fatigue Severity Scale}).
+    \item \textbf{Somnolencia (\textit{Sleepiness}):} Presión homeostática o propensión inmediata hacia el sueño derivada de la privación de descanso o ritmos circadianos.
+    \item \textbf{Fatigabilidad (\textit{Fatigability}):} Razón de cambio en la fatiga de estado por unidad de esfuerzo o trabajo físico/cognitivo estandarizado. La fatigabilidad cuantifica la vulnerabilidad individual ante el estrés psicofísico.
+\end{itemize}
+
+
+
+\section{Biomarcadores Fisiológicos y Tecnologías de Sensores}
+\label{sec:teoria_sensores}
+
+La captura no invasiva y continua de bioseñales permite monitorizar la actividad del Sistema Nervioso Autónomo (SNA) y el Sistema Nervioso Central (SNC). La Figura~\ref{fig:sensores_diagrama_detallado} esquematiza la interacción entre los subsistemas fisiológicos y los cuatro dispositivos vestibles del dataset \fatigueset{}.
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[node distance=1.4cm, auto,
+        device/.style={rectangle, draw=etsiitblue, fill=blue!6, rounded corners, text width=3.4cm, text centered, minimum height=2.2cm},
+        system/.style={rectangle, draw=ugrred, fill=red!6, rounded corners, text width=3.4cm, text centered, minimum height=1.6cm},
+        target/.style={rectangle, draw=darkblue, fill=blue!15, rounded corners, text width=4.5cm, text centered, minimum height=1.5cm},
+        line/.style={draw=darkblue, -latex', thick}]
+        
+        \node [device] (zephyr) {\textbf{Zephyr BioHarness}\\(Pecho, 250 Hz)\\\scriptsize ECG, HR, BR, HRV,\\Onda Respiratoria, ACC};
+        \node [device, right=0.6cm of zephyr] (empatica) {\textbf{Empatica E4}\\(Muñeca, 64 Hz)\\\scriptsize BVP, EDA (4 Hz),\\Temp (4 Hz), ACC (32 Hz)};
+        \node [device, right=0.6cm of empatica] (muse) {\textbf{Muse S Headband}\\(Frente, 256 Hz)\\\scriptsize EEG 4 canales, Bandas\\$\delta,\theta,\alpha,\beta,\gamma$, Blinks};
+        \node [device, right=0.6cm of muse] (esense) {\textbf{Nokia eSense}\\(Orejas, 100 Hz)\\\scriptsize PPG bilateral, ACC 3D,\\Giróscopo 3D};
+        
+        \node [system, below=1.2cm of zephyr] (cardio) {\textbf{Sistema Cardiorrespiratorio}\\\footnotesize Tono Vagal, Arritmia Sinusal};
+        \node [system, below=1.2cm of empatica] (sna) {\textbf{Sistema Autónomo}\\\footnotesize Sudoración Ecrina Simpática};
+        \node [system, below=1.2cm of muse] (snc) {\textbf{Sistema Nervioso Central}\\\footnotesize Potencia Espectral Cortical};
+        \node [system, below=1.2cm of esense] (cinem) {\textbf{Dinámica Cinemática}\\\footnotesize Actigrafía y Movimiento};
+        
+        \node [target, below=1.2cm of $(sna)!0.5!(snc)$] (output) {\textbf{Modelo Unificado de Predicción}\\\small $\hat{\bm{y}} = [\hat{y}_{\text{física}}, \hat{y}_{\text{mental}}]^T \in [0, 100]^2$};
+        
+        \path [line] (zephyr) -- (cardio);
+        \path [line] (empatica) -- (sna);
+        \path [line] (muse) -- (snc);
+        \path [line] (esense) -- (cinem);
+        
+        \path [line] (cardio) |- (output);
+        \path [line] (sna) -- (output);
+        \path [line] (snc) -- (output);
+        \path [line] (cinem) |- (output);
+    \end{tikzpicture}
+    \caption{Mapa de integración fisiológica y flujo de información multimodal desde los 4 dispositivos vestibles hacia el modelo predictivo de fatiga.}
+    \label{fig:sensores_diagrama_detallado}
+\end{figure}
+
+\subsection{Electrocardiografía y Variabilidad de la Frecuencia Cardíaca (HRV)}
+
+El electrocardiograma (ECG) registra la propagación de los dipolos de despolarización y repolarización cardíaca generados secuencialmente en las aurículas (onda P), los ventrículos (complejo QRS) y la repolarización ventricular (onda T). La Variabilidad de la Frecuencia Cardíaca (HRV) cuantifica las fluctuaciones en los intervalos temporales inter-latido (intervalos R-R entre picos R adyacentes del complejo QRS) \cite{taskforce1996heart, tarvainen2014kubios}.
+
+\subsubsection{Formulación Matemática de Parámetros Estadísticos de HRV}
+Dado el conjunto de $N$ intervalos $RR = \{RR_1, RR_2, \dots, RR_N\}$ en milisegundos con media $\overline{RR} = \frac{1}{N}\sum_{i=1}^N RR_i$:
+\begin{align}
+    \text{SDNN} &= \sqrt{\frac{1}{N-1}\sum_{i=1}^N (RR_i - \overline{RR})^2} && \text{(Desviación estándar global)} \\
+    \text{RMSSD} &= \sqrt{\frac{1}{N-1}\sum_{i=1}^{N-1} (RR_{i+1} - RR_i)^2} && \text{(Actividad parasimpática de alta frecuencia)} \\
+    \text{pNN50} &= \frac{1}{N-1}\sum_{i=1}^{N-1} \mathbb{I}(|RR_{i+1} - RR_i| > 50\,\text{ms}) \times 100\% && \text{(Porcentaje de diferencias $>50$ ms)}
+\end{align}
+
+\subsubsection{Análisis Espectral de HRV y Balance Simpaticovagal}
+Mediante el remuestreo cúbico uniforme del tacograma R-R (frecuencia de interpolación $f_{\text{interp}} = 4$ Hz) y el cálculo de la Densidad Espectral de Potencia (PSD) vía método de Welch \cite{oppenheim1999discrete}, se cuantifica la energía en tres bandas fisiológicas:
+\begin{itemize}
+    \item \textbf{VLF (\textit{Very Low Frequency}, $\le 0.04$ Hz):} Refleja ritmos hormonales y termorregulación lenta.
+    \item \textbf{LF (\textit{Low Frequency}, $0.04 - 0.15$ Hz):} Modulada por la actividad conjunta simpática y parasimpática en el barorreflejo arterial.
+    \item \textbf{HF (\textit{High Frequency}, $0.15 - 0.40$ Hz):} Sincronizada con el ciclo ventilatorio respiratorio (Arritmia Sinusal Respiratoria, RSA), constituyendo un índice puro de tono vagal parasimpático.
+    \item \textbf{Ratio LF/HF:} Índice clásico del balance simpaticovagal:
+    \begin{equation}
+        \text{Ratio LF/HF} = \frac{\int_{0.04}^{0.15} \hat{S}_{RR}(f)\,df}{\int_{0.15}^{0.40} \hat{S}_{RR}(f)\,df}
+    \end{equation}
+    Bajo estrés psicofisiológico o fatiga física aguda, el tono vagal HF se atenúa drásticamente mientras que la actividad simpática LF se incrementa, elevando el ratio LF/HF.
+\end{itemize}
+
+\subsubsection{Análisis No Lineal del Gráfico de Poincaré}
+El gráfico de Poincaré representa geométricamente el retorno de estado $RR_{i+1}$ frente a $RR_i$. Ajustando una elipse orientada a $45^\circ$ respecto al eje de identidad, se derivan los descriptores de dispersión:
+\begin{equation}
+    SD_1 = \sqrt{\frac{1}{2}\text{Var}(RR_{i+1} - RR_i)} = \frac{\text{RMSSD}}{\sqrt{2}}, \quad SD_2 = \sqrt{2\,\text{SDNN}^2 - \frac{1}{2}\text{RMSSD}^2}
+\end{equation}
+donde $SD_1$ mide la variabilidad latido a latido de corto plazo y $SD_2$ evalúa la variabilidad a largo plazo.
+
+\subsection{Actividad Electrodérmica (EDA / GSR)}
+
+La Actividad Electrodérmica (EDA, \textit{Electrodermal Activity}) evalúa la conductancia eléctrica cutánea generada por las glándulas sudoríparas ecrinas en la palma de las manos y muñecas, inervadas de forma exclusiva por fibras posganglionares del sistema nervioso simpático sudomotor \cite{boucsein2012electrodermal}.
+
+La señal $y(t)$ (en $\mu\text{S}$) se descompone en:
+\begin{equation}
+    y(t) = y_{\text{tónica}}(t) + y_{\text{fásica}}(t) + \epsilon(t)
+\end{equation}
+\begin{itemize}
+    \item \textbf{Componente Tónica (SCL, \textit{Skin Conductance Level}):} Nivel de fondo cuasi-estático que varía en escalas de minutos a horas, reflejando el tono simpático basal.
+    \item \textbf{Componente Fásica (SCR, \textit{Skin Conductance Response}):} Respuestas dinámicas transitorias provocadas por eventos atencionales, estímulos emocionales discretos o sobrecarga mental repentina.
+\end{itemize}
+La presencia de fatiga mental crónica atenúa la amplitud media de las respuestas SCR y reduce la frecuencia de picos espontáneos (\textit{non-specific SCRs}) debido a la saturación del control colinérgico periférico.
+
+\subsection{Electroencefalografía (EEG) y Dinámica de Bandas Espectrales}
+
+El electroencefalograma registra la actividad sináptica sincrónica de las columnas corticales mediante electrodos colocados sobre el cuero cabelludo según el sistema internacional 10--20 \cite{klimesch1999eeg}. En la diadema Muse S se capturan cuatro canales fronto-temporales: TP9 (temporal izquierdo), AF7 (frontopolar izquierdo), AF8 (frontopolar derecho) y TP10 (temporal derecho).
+
+La potencia espectral absoluta en Bels se integra en cinco bandas fundamentales:
+\begin{enumerate}
+    \item \textbf{Delta ($\delta$, $0.5 - 4$ Hz):} Predominante en sueño profundo de ondas lentas. Su presencia en vigilia indica somnolencia extrema.
+    \item \textbf{Theta ($\theta$, $4 - 8$ Hz):} Asociada a la codificación en memoria de trabajo y navegación espacial. En tareas cognitivas prolongadas, la potencia $\theta$ en electrodos frontales (AF7, AF8) se incrementa proporcionalmente a la fatiga mental acumulada.
+    \item \textbf{Alfa ($\alpha$, $8 - 12$ Hz):} Refleja sincronización tálamo-cortical y reposo atencional. Durante la fatiga mental, el aumento de la potencia $\alpha$ frontal y parietal evidencia el fenómeno de \textit{inattentive idling} o desconexión ejecutiva.
+    \item \textbf{Beta ($\beta$, $12 - 30$ Hz):} Ondas rápidas desincronizadas asociadas a la alerta cortical y al procesamiento cognitivo activo. Su potencia disminuye marcadamente cuando sobreviene el agotamiento cognitivo.
+    \item \textbf{Gamma ($\gamma$, $30 - 100$ Hz):} Oscilaciones de alta frecuencia vinculadas a la integración multisensorial y atención focalizada.
+\end{enumerate}
+
+Para sintetizar la información espectral multicanal en índices unificados de fatiga, se calculan ratios biomarcadores \cite{klimesch1999eeg}:
+\begin{equation}
+    R_{\text{fatiga}} = \frac{P_\theta + P_\alpha}{P_\beta}, \quad R_{\theta/\beta} = \frac{P_\theta}{P_\beta}, \quad R_{\alpha/\beta} = \frac{P_\alpha}{P_\beta}
+\end{equation}
+
+\subsection{Dinámica Respiratoria y Acelerometría Multieje}
+
+La señal respiratoria del sensor Zephyr BioHarness captura la excursión torácica a 25 Hz mediante tecnología piezoeléctrica resistiva. Permite derivar la Frecuencia Respiratoria (BR, en respiraciones por minuto) y el Intervalo entre Respiraciones (B-B, en ms). La fatiga física induce taquipnea e hiperventilación, mientras que la fatiga mental genera respiraciones asimétricas y pausas apneicas transitorias.
+
+Los acelerómetros triaxiales en los 4 dispositivos permiten calcular la aceleración neta o Magnitud Vectorial (\textit{Vector Magnitude Unit}):
+\begin{equation}
+    \text{VMU}(t) = \sqrt{a_x(t)^2 + a_y(t)^2 + a_z(t)^2}
+\end{equation}
+proporcionando el desacoplamiento necesario para discernir cuándo un incremento en la frecuencia cardíaca responde a esfuerzo motriz frente a estados de estrés puramente mental.
+
+
+
+\section{Paradigmas y Modelos de Aprendizaje para Series Temporales}
+\label{sec:teoria_modelos}
+
+\subsection{Modelos Clásicos de Machine Learning Tabular}
+
+Los algoritmos tradicionales de aprendizaje automático estadístico operan sobre matrices de datos tabulares agregadas \cite{hastie2009elements}.
+\begin{itemize}
+    \item \textbf{Regresión Ridge:} Modelo lineal regularizado con penalización $L_2$ para prevenir multicolinealidad entre características correlacionadas (como múltiples bandas espectrales):
+    \begin{equation}
+        \hat{\bm{w}} = (\bm{X}^T\bm{X} + \lambda \bm{I})^{-1}\bm{X}^T\bm{y}
+    \end{equation}
+    \item \textbf{Support Vector Regression (SVR):} Plantea un margen insensible $\epsilon$ y emplea funciones de núcleo (\textit{kernel trick}) para proyectar los datos a espacios de Hilbert de dimensión infinita mediante el kernel Gaussiano RBF \cite{cortes1995support}:
+    \begin{equation}
+        K(\bm{x}_i, \bm{x}_j) = \exp\left( -\gamma \|\bm{x}_i - \bm{x}_j\|^2 \right)
+    \end{equation}
+    \item \textbf{Random Forest Regressor:} Ensamble de $M$ árboles de regresión decorrelacionados entrenados sobre muestras bootstrap $\mathcal{D}_m$ con selección aleatoria de subespacios de características de tamaño $\lfloor \sqrt{D} \rfloor$ \cite{breiman2001random}, complementado en la literatura por esquemas de potenciación de gradiente como XGBoost \cite{chen2016xgboost}:
+    \begin{equation}
+        \hat{y}(\bm{x}) = \frac{1}{M} \sum_{m=1}^M T_m(\bm{x}; \Theta_m)
+    \end{equation}
+\end{itemize}
+
+\subsection{Redes Neuronales Recurrentes: RNN, LSTM y GRU}
+
+Las redes neuronales recurrentes mantienen un estado oculto dinámico $\bm{h}_t$ para procesar secuencias $\bm{x}_{1:T}$.
+
+\subsubsection{RNN Estándar y el Problema del Desvanecimiento del Gradiente}
+\begin{equation}
+    \bm{h}_t = \tanh(\bm{W}_{hh} \bm{h}_{t-1} + \bm{W}_{xh} \bm{x}_t + \bm{b}_h)
+\end{equation}
+La derivada de la función de pérdida $\mathcal{L}_T$ respecto a los pesos $\bm{W}_{hh}$ involucra el producto de matrices Jacobianas temporales:
+\begin{equation}
+    \frac{\partial \mathcal{L}_T}{\partial \bm{W}_{hh}} = \sum_{t=1}^T \frac{\partial \mathcal{L}_T}{\partial \bm{h}_T} \left( \prod_{j=t+1}^T \frac{\partial \bm{h}_j}{\partial \bm{h}_{j-1}} \right) \frac{\partial \bm{h}_t}{\partial \bm{W}_{hh}}
+\end{equation}
+Dado que $\|\frac{\partial \bm{h}_j}{\partial \bm{h}_{j-1}}\| \le \|\bm{W}_{hh}^T\| \cdot \|\text{diag}(1 - \bm{h}_j^2)\|$, cuando el mayor valor propio de $\bm{W}_{hh}$ es menor que 1, el gradiente decae exponencialmente a cero con la distancia temporal $T - t$, impidiendo aprender dependencias a largo plazo \cite{hochreiter1997long}.
+
+\subsubsection{LSTM (\textit{Long Short-Term Memory})}
+Hochreiter y Schmidhuber \cite{hochreiter1997long} resolvieron este colapso mediante el estado de celda $\bm{C}_t$ y un carrusel de error constante (\textit{Constant Error Carousel}, CEC) regulado por compuertas:
+\begin{align}
+    \bm{f}_t &= \sigma(\bm{W}_f \bm{x}_t + \bm{U}_f \bm{h}_{t-1} + \bm{b}_f) && \text{(Compuerta de olvido)} \\
+    \bm{i}_t &= \sigma(\bm{W}_i \bm{x}_t + \bm{U}_i \bm{h}_{t-1} + \bm{b}_i) && \text{(Compuerta de entrada)} \\
+    \tilde{\bm{C}}_t &= \tanh(\bm{W}_c \bm{x}_t + \bm{U}_c \bm{h}_{t-1} + \bm{b}_c) && \text{(Candidato a celda)} \\
+    \bm{C}_t &= \bm{f}_t \odot \bm{C}_{t-1} + \bm{i}_t \odot \tilde{\bm{C}}_t && \text{(Actualización de memoria)} \\
+    \bm{o}_t &= \sigma(\bm{W}_o \bm{x}_t + \bm{U}_o \bm{h}_{t-1} + \bm{b}_o) && \text{(Compuerta de salida)} \\
+    \bm{h}_t &= \bm{o}_t \odot \tanh(\bm{C}_t) && \text{(Estado oculto)}
+\end{align}
+
+\subsubsection{GRU (\textit{Gated Recurrent Unit})}
+La arquitectura GRU \cite{cho2014learning} suprime el estado de celda separado y unifica las compuertas en un modelo más compacto de $3 d_h^2$ parámetros:
+\begin{align}
+    \bm{z}_t &= \sigma(\bm{W}_z \bm{x}_t + \bm{U}_z \bm{h}_{t-1} + \bm{b}_z) && \text{(Compuerta de actualización)} \\
+    \bm{r}_t &= \sigma(\bm{W}_r \bm{x}_t + \bm{U}_r \bm{h}_{t-1} + \bm{b}_r) && \text{(Compuerta de reinicio)} \\
+    \tilde{\bm{h}}_t &= \tanh(\bm{W}_h \bm{x}_t + \bm{U}_h (\bm{r}_t \odot \bm{h}_{t-1}) + \bm{b}_h) && \text{(Estado candidato)} \\
+    \bm{h}_t &= (1 - \bm{z}_t) \odot \bm{h}_{t-1} + \bm{z}_t \odot \tilde{\bm{h}}_t && \text{(Estado final)}
+\end{align}
+
+\subsection{Redes Convolucionales Temporales (TCN) y Modelos Híbridos}
+
+\subsubsection{TCN (\textit{Temporal Convolutional Networks})}
+Las redes TCN \cite{bai2018empirical} superan la lentitud secuencial de las RNN mediante convoluciones causales unidimensionales dilatadas que permiten un procesamiento completamente paralelizable en GPU:
+\begin{equation}
+    \bm{y}(t) = (\bm{x} *_d \bm{f})(t) = \sum_{k=0}^{K-1} \bm{f}(k) \cdot \bm{x}(t - d \cdot k)
+\end{equation}
+Utilizando dilataciones exponenciales $d \in \{1, 2, 4, 8, 16\}$ y bloques residuales con normalización por peso (\textit{Weight Normalization}) y capas de recorte causal (\code{Chomp1d}), el campo receptivo abarca miles de muestras temporales con una complejidad temporal lineal $\mathcal{O}(T)$.
+
+\subsubsection{Arquitectura Híbrida CNN-LSTM}
+En señales fisiológicas complejas, las capas convolucionales 1D iniciales actúan como extractores morfológicos de características invariantes a pequeñas traslaciones (como la detección de ondas R en ECG o transientes fásicos en EDA), mientras que las capas LSTM posteriores aprenden las transiciones de fatiga a lo largo de los minutos \cite{shi2015convolutional}.
+
+\subsection{Modelos Basados en Auto-Atención: Transformers y PatchTST}
+
+\subsubsection{Transformer de Series Temporales}
+El mecanismo de auto-atención multi-cabeza calcula representaciones contextuales globales \cite{vaswani2017attention}:
+\begin{equation}
+    \text{Attention}(\bm{Q}, \bm{K}, \bm{V}) = \text{softmax}\left(\frac{\bm{Q}\bm{K}^T}{\sqrt{d_k}}\right)\bm{V}
+\end{equation}
+donde $\bm{Q} = \bm{X}\bm{W}_Q$, $\bm{K} = \bm{X}\bm{W}_K$, $\bm{V} = \bm{X}\bm{W}_V$. Para preservar el orden de las señales fisiológicas, se agrega una codificación posicional sinusoidal $PE_{(pos, 2i)} = \sin(pos/10000^{2i/d_{\text{model}}})$.
+
+\subsubsection{PatchTST (\textit{Patch Time Series Transformer})}
+Nie et al. \cite{nie2023time} demostraron que aplicar auto-atención punto a punto en series temporales es ineficiente y susceptible al ruido de alta frecuencia. \patchtst{} resuelve este problema mediante:
+\begin{enumerate}
+    \item \textbf{Parcheo (\textit{Patching}):} Divide la serie univariada de longitud $T$ en $N$ parches de tamaño $P$ con paso $S$:
+    \begin{equation}
+        N = \left\lfloor \frac{T - P}{S} \right\rfloor + 2
+    \end{equation}
+    reduciendo la complejidad cuadrática de la atención de $\mathcal{O}(T^2)$ a $\mathcal{O}(N^2)$.
+    \item \textbf{Independencia de Canales (\textit{Channel Independence}):} Cada canal de los 23 sensores de \fatigueset{} se proyecta a través de la misma arquitectura Transformer con pesos compartidos, tratando cada bioseñal como una instancia univariada independiente y agregando sus representaciones en la capa de regresión final.
+\end{enumerate}
+
+\subsection{La Arquitectura Recurrente Extendida: xLSTM y sLSTM}
+
+A pesar del auge de los Transformers, la inferencia autoregresiva paso a paso en Transformers requiere una memoria de claves-valores $\mathcal{O}(T)$, lo que resulta prohibitivo para dispositivos vestibles de bajo consumo. En 2024, Beck et al. \cite{beck2024xlstm} propusieron \xlstm{} (\textit{Extended Long Short-Term Memory}), que moderniza las RNN mediante dos celdas innovadoras: \mlstm{} (memoria matricial asociativa con regla de covarianza) y \slstm{} (\textit{Stabilized LSTM} con compuertas exponenciales y memoria escalar).
+
+\subsubsection{Formulación Matemática de la Celda sLSTM}
+La limitación central de la LSTM clásica reside en sus compuertas sigmoides $\sigma(\cdot) \in (0, 1)$, que impiden descartar de forma instantánea información obsoleta o sobrescribir el estado de memoria cuando se produce un cambio brusco de fase en la actividad física o mental.
+
+La celda \slstm{} introduce compuertas exponenciales $\exp(\tilde{f}_t)$ y $\exp(\tilde{i}_t)$. Para asegurar la estabilidad numérica frente a desbordamientos aritméticos (\textit{overflow}), introduce un escalar estabilizador $m_t$ que rastrea el valor máximo de las preactivaciones acumuladas:
+
+\begin{align}
+    \tilde{f}_t &= \bm{w}_f^T \bm{x}_t + \bm{u}_f^T \bm{h}_{t-1} + b_f \\
+    \tilde{i}_t &= \bm{w}_i^T \bm{x}_t + \bm{u}_i^T \bm{h}_{t-1} + b_i \\
+    \tilde{z}_t &= \bm{w}_z^T \bm{x}_t + \bm{u}_z^T \bm{h}_{t-1} + b_z \\
+    \tilde{o}_t &= \bm{w}_o^T \bm{x}_t + \bm{u}_o^T \bm{h}_{t-1} + b_o
+\end{align}
+
+El factor estabilizador recursivo se calcula como:
+\begin{equation}
+    m_t = \max(\tilde{f}_t + m_{t-1}, \tilde{i}_t)
+\end{equation}
+A partir de $m_t$, las compuertas exponenciales estabilizadas quedan acotadas:
+\begin{equation}
+    f_t = \exp(\tilde{f}_t - m_t + m_{t-1}), \quad i_t = \exp(\tilde{i}_t - m_t)
+\end{equation}
+El estado normalizador $n_t$ y el estado de memoria $c_t$ se actualizan recursivamente:
+\begin{align}
+    n_t &= f_t \cdot n_{t-1} + i_t \\
+    c_t &= f_t \cdot c_{t-1} + i_t \cdot \tanh(\tilde{z}_t)
+\end{align}
+Finalmente, el estado oculto estabilizado se obtiene aplicando la compuerta de salida sigmoide $\bm{o}_t = \sigma(\tilde{o}_t)$ sobre el cociente normalizado:
+\begin{equation}
+    \bm{h}_t = \bm{o}_t \odot \left( \frac{\bm{c}_t}{n_t + \epsilon} \right)
+\end{equation}
+
+Esta formulación garantiza una dinámica de sobrescritura estricta sin saturación de gradientes y mantiene una complejidad temporal y espacial strictly $\mathcal{O}(1)$ durante la inferencia en tiempo real.
+
+\subsection{Modelos Fundacionales para Series Temporales (\textit{Foundation Models})}
+
+Siguiendo el éxito de los modelos fundacionales en procesamiento de lenguaje natural y visión computacional, recientemente han surgido arquitecturas preentrenadas a gran escala sobre cientos de millones de series temporales heterogéneas \cite{garza2023timegpt, woo2024unified}:
+
+\begin{enumerate}
+    \item \textbf{\moment{} (\textit{Multi-task Open pre-trained Model for Time series}):} Desarrollado por Goswami et al. \cite{goswami2024moment}, adapta la arquitectura encoder-only de T5. Se preentrena sobre el Time-series Pile (más de mil millones de observaciones temporales) mediante reconstrucción enmascarada de parches con una tasa de enmascaramiento $r = 0.3$. Para la predicción de fatiga, el backbone preentrenado actúa como extractor de representaciones universales, requiriendo el ajuste de una cabeza lineal de regresión.
+    \item \textbf{\chronos{}:} Propuesto por Ansari et al. \cite{ansari2024chronos} (Amazon Research), reformula las series temporales continuas como secuencias de tokens discretos. La serie de entrada se normaliza mediante escalado por media y se cuantiza uniformemente en $B = 4096$ bins discretos. Un modelo de lenguaje autoregresivo basado en T5 predice la distribución de probabilidad del siguiente token mediante entropía cruzada. Esto permite estimar la media esperada de fatiga y cuantificar intervalos de incertidumbre predictiva mediante muestreo de Monte Carlo:
+    \begin{equation}
+        \mathbb{E}[\hat{y}] = \sum_{k=1}^B p_k \cdot \text{centro}(b_k)
+    \end{equation}
+    \item \textbf{\timesfm{} (\textit{Time Series Foundation Model}):} Desarrollado por Google Research \cite{das2024decoder}, es una arquitectura decoder-only preentrenada sobre más de 100 mil millones de puntos temporales reales y sintéticos. Emplea un esquema de entrada por parches continuos sin cuantización discreta y auto-atención causal, optimizado para predicción multi-horizonte de alta velocidad.
+\end{enumerate}
+
+
+
+\section{Taxonomía Comparativa y Posicionamiento Diferencial del TFG}
+\label{sec:teoria_taxonomia}
+
+La Tabla~\ref{tab:sota_taxonomia_completa} consolida la clasificación sistemática de los doce modelos evaluados en el TFG, contrastando sus fundamentos teóricos, requisitos de memoria y capacidades predictivas.
+
+\begin{table}[htbp]
+\centering
+\caption{Taxonomía exhaustiva de los paradigmas de modelado para series temporales fisiológicas.}
+\label{tab:sota_taxonomia_completa}
+\small
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{@{}llp{3.8cm}cccp{5.5cm}@{}}
+\toprule
+\textbf{Familia} & \textbf{Modelo} & \textbf{Mecanismo} & \textbf{Comp.} & \textbf{Params} & \textbf{Preentren.} & \textbf{Propiedades Distintivas} \\
+\midrule
+\multirow{2}{*}{\textbf{ML Clásico}} 
+& Ridge / SVR & Agregación estadística & $\mathcal{O}(N D)$ & $\sim 10^2$ & No & Rápido, interpretable, baseline determinista. \\
+& Random Forest & Ensamble de árboles & $\mathcal{O}(M K N \log N)$ & $\sim 10^4$ & No & Captura no linealidades, sobreajusta en train. \\
+\midrule
+\multirow{3}{*}{\textbf{Recurrente}} 
+& RNN Simple & Estado oculto $\tanh$ & $\mathcal{O}(T d_h^2)$ & $1.89\text{k}$ & No & Sujeto a desvanecimiento del gradiente. \\
+& LSTM & Compuertas sigmoides / CEC & $\mathcal{O}(T d_h^2)$ & $887\text{k}$ & No & Memoria a largo plazo, estándar industrial. \\
+& \textbf{GRU} & Compuertas reset / update & $\mathcal{O}(T d_h^2)$ & $\mathbf{568\text{k}}$ & No & \textbf{Mejor equilibrio global precisión/eficiencia}. \\
+\midrule
+\multirow{2}{*}{\textbf{Convolucional}} 
+& CNN-LSTM & Convolución 1D + LSTM & $\mathcal{O}(T K C + d_h^2)$ & $\mathbf{84\text{k}}$ & No & Extracción jerárquica morfológica local. \\
+& \textbf{TCN} & Convolución causal dilatada & $\mathcal{O}(L T K C^2)$ & $\mathbf{175\text{k}}$ & No & \textbf{Paralelismo masivo, inferencia $<1.5$ ms}. \\
+\midrule
+\multirow{2}{*}{\textbf{Atencional}} 
+& Transformer & Auto-atención punto a punto & $\mathcal{O}(T^2 d)$ & $396\text{k}$ & No & Relaciones globales, sensible al ruido local. \\
+& \patchtst{} & Auto-atención por parches & $\mathcal{O}((T/S)^2 d)$ & $\mathbf{77\text{k}}$ & No & Independencia de canales, reduce complejidad. \\
+\midrule
+\textbf{Rec. Ext.} 
+& \textbf{\xlstm{} (\slstm{})} & Compuertas $\exp$ + norm $n_t$ & $\mathcal{O}(T d_h^2)$ & $\mathbf{625\text{k}}$ & No & \textbf{Sobrescritura dinámica, estabilizador $m_t$}. \\
+\midrule
+\multirow{3}{*}{\textbf{Foundation}} 
+& \moment{}-large & Encoder T5 con parches & $\mathcal{O}((T/P)^2 d)$ & $341\text{M}$ & $10^9$ obs & Enmascaramiento de parches, fine-tuning. \\
+& \textbf{\chronos{}-t5} & Decoder T5 probabilístico & $\mathcal{O}(T^2 d)$ & $710\text{M}$ & Multi-corpus & \textbf{Mejor MAE en fatiga física (Zero-shot)}. \\
+& \timesfm{} 2.5 & Decoder Google con parches & $\mathcal{O}((T/P)^2 d)$ & $200\text{M}$ & $10^{11}$ obs & Inferencia causal de alta velocidad en GPU. \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\subsection{Identificación de Lagunas en la Literatura y Posicionamiento Diferencial del TFG}
+\label{sec:teoria_lagunas}
+
+Tras el análisis crítico de la literatura académica reciente, se han identificado cuatro lagunas o vacíos de conocimiento fundamentales que justifican y posicionan la contribución diferencial de este Trabajo de Fin de Grado:
+
+\begin{enumerate}[label=\bfseries L\arabic*.]
+    \item \textbf{Sesgo de Fuga de Datos (Data Leakage) por Validación Inadecuada:} Un número sustancial de estudios en la literatura biomédica aplica validación cruzada K-Fold aleatoria a nivel de ventana. Debido a la naturaleza no estacionaria y autorregresiva de las bioseñales, esto provoca que ventanas del mismo participante pertenezcan simultáneamente al conjunto de entrenamiento y prueba, memorizando la "firma fisiológica" individual del sujeto e inflando artificialmente el rendimiento ($R^2 > 0.95$). \textit{Posicionamiento diferencial:} Este TFG impone un protocolo estricto de validación cruzada estratificada por participante (\textit{GroupKFold}, $K=5$), garantizando cero fuga de información y evaluando la generalización real ante sujetos completamente no vistos.
+    \item \textbf{Falta de Evaluaciones Comparativas Unificadas entre xLSTM y Foundation Models en Bioseñales:} Aunque la arquitectura \xlstm{} (Beck et al., 2024) y los Modelos Fundacionales (\chronos{}, \timesfm{}, \moment{}) representan la vanguardia de la IA en 2024-2025, no existen estudios comparativos empíricos que los enfrenten en el dominio específico de la predicción multimodal de fatiga sobre conjuntos de datos estandarizados como \fatigueset{}. \textit{Posicionamiento diferencial:} Este trabajo constituye uno de los primeros benchmarks independientes que evalúa la capacidad de transferencia zero-shot de modelos de 710M de parámetros frente a redes recurrentes estabilizadas ultra-ligeras (625k parámetros).
+    \item \textbf{Ausencia de Análisis Multiobjetivo de Pareto (Precisión vs. Latencia vs. Parámetros):} La mayoría de las investigaciones se limitan a optimizar métricas de error escalar (MAE/RMSE) sin considerar las restricciones operativas de la computación ubicua en dispositivos vestibles (capacidad de memoria RAM, latencia de inferencia y consumo de batería). \textit{Posicionamiento diferencial:} Este TFG formula explícitamente el análisis de compromiso de Pareto, identificando modelos óptimos para microcontroladores en el Edge (TCN/CNN-LSTM) frente a modelos para servidor en la nube (Chronos).
+    \item \textbf{Inexistencia de un Framework Software Abierto y Reusable:} El código utilizado en publicaciones previas suele ser monolítico, no documentado o privado, dificultando la reproducibilidad. \textit{Posicionamiento diferencial:} Este TFG aporta la librería de código abierto en Python \code{fatigueset-lib}, que estandarice la factoría de modelos, motores de entrenamiento y pipelines de datos bajo principios de ingeniería del software.
+\end{enumerate}

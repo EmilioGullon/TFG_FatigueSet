@@ -1,0 +1,256 @@
+% ======================================================================
+% CAPÍTULO 7: PLANIFICACIÓN TEMPORAL Y GESTIÓN DEL PROYECTO
+% ======================================================================
+
+\chapter{Planificación Temporal y Gestión del Proyecto}
+\label{cap:planificacion}
+
+\section{Planificación Temporal del Proyecto}
+\label{sec:plan_temporal}
+
+El desarrollo de este Trabajo de Fin de Grado comprende una carga académica de 12 créditos ECTS, lo que equivale normativamente a un cómputo estimado de entre 300 y 360 horas de dedicación individual. El proyecto se ha ejecutado a lo largo de un período de 24 semanas lectivas (aproximadamente 6 meses), estructurado en seis Paquetes de Trabajo (WP, \textit{Work Packages}) secuenciales e interconectados.
+
+\subsection{Desglose de Paquetes de Trabajo y Tareas}
+
+\begin{enumerate}[label=\textbf{WP\arabic*.}, leftmargin=1.8cm]
+    \item \textbf{Revisión Bibliográfica y Estado del Arte (45 horas, Semanas 1--4):}
+    \begin{itemize}
+        \item T1.1: Búsqueda y análisis sistemático de literatura en IEEE Xplore, ACM Digital Library, PubMed y NeurIPS sobre biomarcadores fisiológicos de fatiga.
+        \item T1.2: Estudio de arquitecturas neuronales para series temporales (RNN, LSTM, TCN, Transformers, \patchtst{}, \xlstm{}).
+        \item T1.3: Análisis de Modelos Fundacionales para series temporales (\moment{}, \chronos{}, \timesfm{}).
+    \end{itemize}
+    \item \textbf{Ingesta, Exploración y Preprocesamiento de FatigueSet (60 horas, Semanas 3--8):}
+    \begin{itemize}
+        \item T2.1: Descarga, verificación de integridad e indexación de los 23 canales fisiológicos y metadatos de los 12 participantes.
+        \item T2.2: Implementación de algoritmos de sincronización temporal y remuestreo polifásico anti-aliasing a 64 Hz.
+        \item T2.3: Diseño de filtros digitales Butterworth e IIR Notch para ECG, BVP, EDA y EEG.
+        \item T2.4: Desarrollo del módulo de segmentación en ventanas deslizantes ($W=60\,\text{s}, \Delta=30\,\text{s}$).
+        \item T2.5: Extracción de características en dominios temporal, frecuencial (PSD, Welch) y no lineal (SampEn, Poincaré).
+    \end{itemize}
+    \item \textbf{Diseño e Implementación de la Librería \code{fatigueset-lib} (80 horas, Semanas 7--14):}
+    \begin{itemize}
+        \item T3.1: Arquitectura modular del paquete bajo principios SOLID y tipado estático con \code{typing}.
+        \item T3.2: Implementación de clases de modelos PyTorch (LSTM, GRU, CNN-LSTM, TCN, Transformer, \patchtst{}).
+        \item T3.3: Programación nativa en PyTorch de la celda recurrente estabilizada \code{sLSTMCell} con normalizador logarítmico.
+        \item T3.4: Construcción del motor desacoplado de entrenamiento y validación (\code{engine.py}).
+        \item T3.5: Creación de la suite de pruebas unitarias con \code{pytest} y test de sanidad.
+    \end{itemize}
+    \item \textbf{Optimización Bayesiana de Hiperparámetros con Optuna (55 horas, Semanas 12--18):}
+    \begin{itemize}
+        \item T4.1: Definición de espacios de búsqueda conjuntos (arquitectura + optimizador + regularización).
+        \item T4.2: Implementación de restricciones de divisibilidad algebraica para capas de atención.
+        \item T4.3: Configuración de la base de datos SQLite (\code{optuna\_v2.db}) con soporte multi-trial y persistencia.
+        \item T4.4: Ejecución de las búsquedas bayesianas TPE bajo validación cruzada \textit{GroupKFold}.
+    \end{itemize}
+    \item \textbf{Despliegue en Clúster GPU y Benchmarking de Modelos Fundacionales (50 horas, Semanas 16--21):}
+    \begin{itemize}
+        \item T5.1: Configuración del entorno Conda remoto y redirección de variables de caché en \code{ngpu.ugr.es}.
+        \item T5.2: Programación y verificación de scripts de envío de tareas en SLURM (\code{run\_foundation\_server.sh}).
+        \item T5.3: Evaluación de \moment{}-1-large con fine-tuning de cabeza lineal en GPU.
+        \item T5.4: Benchmarking zero-shot probabilístico con \chronos{}-t5-base y \timesfm{} 2.5.
+    \end{itemize}
+    \item \textbf{Análisis de Resultados, Validación y Redacción de la Memoria (70 horas, Semanas 18--24):}
+    \begin{itemize}
+        \item T6.1: Consolidación y tabulación de métricas multiobjetivo ($R^2$, MAE, RMSE, Pearson $r$, parámetros, tiempos).
+        \item T6.2: Generación de gráficos comparativos de alta resolución y análisis de Pareto.
+        \item T6.3: Validación formal de hipótesis científicas y estudio de limitaciones.
+        \item T6.4: Redacción completa de la memoria en LaTeX siguiendo la guía de la ETSIIT - UGR.
+        \item T6.5: Revisión ortotipográfica, verificación de citas y maquetación final.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Cronograma de Ejecución Real (Diagrama de Gantt a Posteriori)}
+
+La Tabla~\ref{tab:cronograma_gantt} ilustra la distribución temporal efectiva a lo largo de las 24 semanas lectivas del proyecto:
+
+\begin{table}[htbp]
+\centering
+\caption{Cronograma de ejecución real por semanas (Diagrama de Gantt a posteriori).}
+\label{tab:cronograma_gantt}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{@{}llcccccccccccc@{}}
+\toprule
+\textbf{WP} & \textbf{Paquete de Trabajo / Fase} & \textbf{S1-2} & \textbf{S3-4} & \textbf{S5-6} & \textbf{S7-8} & \textbf{S9-10} & \textbf{S11-12} & \textbf{S13-14} & \textbf{S15-16} & \textbf{S17-18} & \textbf{S19-20} & \textbf{S21-22} & \textbf{S23-24} \\
+\midrule
+WP1 & Revisión y Estado del Arte & $\blacksquare$ & $\blacksquare$ & & & & & & & & & & \\
+WP2 & Ingesta y Preprocesamiento & & $\blacksquare$ & $\blacksquare$ & $\blacksquare$ & & & & & & & & \\
+WP3 & Framework \code{fatigueset-lib} & & & & $\blacksquare$ & $\blacksquare$ & $\blacksquare$ & $\blacksquare$ & & & & & \\
+WP4 & Optimización Optuna v2 & & & & & & $\blacksquare$ & $\blacksquare$ & $\blacksquare$ & $\blacksquare$ & & & \\
+WP5 & Clúster GPU y Foundation & & & & & & & & $\blacksquare$ & $\blacksquare$ & $\blacksquare$ & $\blacksquare$ & \\
+WP6 & Resultados y Redacción & & & & & & & & & $\blacksquare$ & $\blacksquare$ & $\blacksquare$ & $\blacksquare$ \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\subsection{Desviaciones y Ajustes Respecto a la Planificación Inicial}
+En consonancia con las recomendaciones del libro de TFG de la UGR \cite{guillen2025libro}, se documentan las principales desviaciones respecto a la estimación inicial:
+\begin{enumerate}
+    \item \textbf{Ajuste en la Gestión de Caché del Clúster (WP5):} Se produjo un retraso inicial de una semana debido al error de cuota en el directorio \code{HOME} del servidor GPU al descargar los pesos preentrenados de \chronos{} y \moment{}. La mitigación mediante redirección de variables de entorno al directorio de scratch permitió recuperar el ritmo sin alterar el plazo final.
+    \item \textbf{Estabilización Numérica de sLSTM (WP3):} La implementación de la celda recurrente con compuertas exponenciales requirió dos semanas adicionales de refinamiento matemático para garantizar que el seguimiento logarítmico del máximo $m_t$ no produjera desbordamientos en cálculos con precisión simple \code{float32}.
+\end{enumerate}
+
+
+% ======================================================================
+\section{Plan de Gestión de Riesgos y Contingencias}
+\label{sec:plan_riesgos}
+% ======================================================================
+
+La Tabla~\ref{tab:matriz_riesgos} resume la matriz de riesgos analizada para el proyecto, su impacto potencial y las medidas preventivas y reactivas adoptadas.
+
+\begin{table}[htbp]
+\centering
+\caption{Matriz de análisis de riesgos y planes de contingencia.}
+\label{tab:matriz_riesgos}
+\small
+\begin{tabularx}{\linewidth}{@{}lp{5.0cm}ccX@{}}
+\toprule
+\textbf{Riesgo} & \textbf{Descripción del Evento} & \textbf{Prob.} & \textbf{Impacto} & \textbf{Plan de Mitigación y Contingencia} \\
+\midrule
+\textbf{R1} & Fuga de información inter-sujeto en validación & Alta & Crítico & Implementación estricta de \textit{GroupKFold} por participante en la carga de datos. \\
+\textbf{R2} & Fallo de memoria GPU (\textit{CUDA OOM}) en clúster & Media & Alto & Desacoplamiento de procesos con \code{nbconvert} y reducción adaptativa de batch size. \\
+\textbf{R3} & Inestabilidad numérica en celdas \slstm{} & Media & Alto & Normalización logarítmica con seguimiento de máximos $m_t$ y normalizador $n_t$. \\
+\textbf{R4} & Límite de tiempo en colas de SLURM ($>$12h) & Alta & Moderado & Checkpointing periódico en disco y persistencia SQLite en Optuna. \\
+\textbf{R5} & Sobreajuste en modelos tabulares clásicos & Alta & Crítico & Detección temprana mediante discrepancia de métricas train vs GroupKFold. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+
+% ======================================================================
+\section{Estudio de Costes y Presupuesto del Proyecto}
+\label{sec:costes_presupuesto}
+% ======================================================================
+
+En esta sección se detalla la valoración económica del desarrollo del Trabajo de Fin de Grado en el supuesto de su ejecución en un entorno profesional e industrial real. Este análisis permite evaluar la eficiencia en el uso de los recursos tecnológicos y temporales, justificando las decisiones de diseño desde una perspectiva de ingeniería. 
+
+Siguiendo las directrices metodológicas de la Universidad de Granada \cite{guillen2025libro}, la estructura presupuestaria se desglosa en cuatro categorías principales: costes de personal, costes de material (hardware y software), costes de despliegue y mantenimiento, y costes indirectos.
+
+\subsection{Costes de Personal}
+El factor humano constituye la partida presupuestaria de mayor peso en el proyecto. Comprende tanto las horas dedicadas por el investigador principal (estudiante) en la totalidad de las etapas del ciclo de vida (análisis, preprocesamiento, desarrollo, optimización, experimentación y redacción) como las horas de dirección científica e inspección técnica aportadas por el equipo docente tutor.
+
+Para el cálculo del coste del desarrollador junior, se considera una tarifa horaria de $25{,}00\,\text{\euro}/\text{h}$, la cual incluye la retribución bruta base y los costes asociados de Seguridad Social e impuestos a cargo de la entidad ejecutora. El tiempo total imputado es de $360\,\text{horas}$, en exacta concordancia con los Paquetes de Trabajo (WP1 a WP6) detallados en la Sección~\ref{sec:plan_temporal}.
+
+Por su parte, la dedicación del personal docente y de investigación (tutores) se cuantifica en $2\,\text{horas/semana}$ durante las 24 semanas de ejecución ($48\,\text{horas}$ en total), estimadas a una tarifa estándar de mercado para perfiles sénior de $45{,}00\,\text{\euro}/\text{h}$.
+
+La Tabla~\ref{tab:costes_personal} resume el desglose de costes de personal.
+
+\begin{table}[htbp]
+\centering
+\caption{Desglose detallado de los costes de personal.}
+\label{tab:costes_personal}
+\small
+\begin{tabularx}{\linewidth}{@{}Xccrr@{}}
+\toprule
+\textbf{Rol / Perfil} & \textbf{Dedicación (h)} & \textbf{Duración (sem)} & \textbf{Tarifa (\euro/h)} & \textbf{Coste Total (\euro)} \\
+\midrule
+Desarrollador Junior / Investigador & 360 & 24 & 25,00 & 9.000,00 \\
+Tutoría Académica y Dirección CTI & 48 & 24 & 45,00 & 2.160,00 \\
+\midrule
+\textbf{Subtotal Costes de Personal} & \textbf{408} & \textbf{24} & -- & \textbf{11.160,00} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Costes de Material y Licencias Software}
+Los costes de material contemplan el equipamiento físico (hardware) y el conjunto de licencias o herramientas informáticas requeridas para la ejecución.
+
+\begin{enumerate}
+    \item \textbf{Equipamiento Hardware (Amortización Prorrateada):} El desarrollo del proyecto se sustentó en un equipo portátil de altas prestaciones de trabajo (procesador Intel Core i9, 32 GB RAM y GPU dedicada NVIDIA RTX). El precio de adquisición del equipo fue de $1.400{,}00\,\text{\euro}$, con una vida útil estimada de 4 años ($48\,\text{meses}$). Puesto que el dispositivo fue utilizado de forma exclusiva para el proyecto durante un período de 6 meses ($0{,}5\,\text{años}$), el coste imputado se calcula mediante la fórmula de amortización lineal:
+    \begin{equation}
+    \label{eq:coste_amortizado}
+    \begin{split}
+        \text{Coste Amortizado} &= \frac{\text{Precio de Compra}}{\text{Vida Útil (años)}} \times \text{Uso en Proyecto (años)} \\
+        &= \frac{1.400{,}00\,\text{\euro}}{4} \times 0{,}5 = 175{,}00\,\text{\euro}
+    \end{split}
+    \end{equation}
+    
+    \item \textbf{Licencias Software y Almacenamiento:} Con el propósito de optimizar los costes de ejecución y garantizar la reproducibilidad científica, la práctica totalidad del ecosistema del proyecto se ha construido sobre software de código abierto y bibliotecas de distribución libre (Python 3.10, PyTorch, Scikit-Learn, Optuna, LaTeX, VS Code y Linux OS), por lo que la partida de licencias software es de $0{,}00\,\text{\euro}$. Únicamente se imputa la cuota de servicios de almacenamiento de alta disponibilidad y copias de seguridad encriptadas en la nube ($10{,}00\,\text{\euro}/\text{mes}$ durante 6 meses, resultando en $60{,}00\,\text{\euro}$).
+\end{enumerate}
+
+La Tabla~\ref{tab:costes_material} resume la partida de costes de material.
+
+\begin{table}[htbp]
+\centering
+\caption{Desglose de costes de material y software.}
+\label{tab:costes_material}
+\small
+\begin{tabularx}{\linewidth}{@{}Xcrr@{}}
+\toprule
+\textbf{Concepto / Recurso} & \textbf{Criterio / Base Imponible} & \textbf{Periodo} & \textbf{Coste Imputado (\euro)} \\
+\midrule
+Workstation portátil GPU (Intel i9, 32GB RAM) & Amortización lineal (4 años / 6 meses uso) & 6 meses & 175,00 \\
+Ecosistema software (Python, PyTorch, Optuna) & Licencia de código abierto / Open Source & 6 meses & 0,00 \\
+Servicio de Backup seguro y Cloud Sync & $10{,}00\,\text{\euro}/\text{mes}$ & 6 meses & 60,00 \\
+\midrule
+\textbf{Subtotal Costes de Material} & -- & -- & \textbf{235,00} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Costes de Despliegue, Cómputo e Infraestructura}
+Para la fase de entrenamiento intensivo, optimización bayesiana de hiperparámetros (Optuna v2) y benchmarking de Modelos Fundacionales (\moment{}, \chronos{}, \timesfm{}), el proyecto hizo uso de los nodos con GPU del clúster de supercomputación universitario (\code{ngpu.ugr.es}). 
+
+En un escenario comercial equivalente en la nube (como AWS EC2 o Google Cloud Platform con GPUs NVIDIA A100/RTX 3090), la tarifa de computación estimada se sitúa en $1{,}20\,\text{\euro}/\text{hora GPU}$. Durante el proyecto se acumularon $150\,\text{horas}$ de uso efectivo de GPU, representando un coste operativo de $180{,}00\,\text{\euro}$.
+
+Asimismo, se prevé una partida de despliegue y mantenimiento posterior durante $12\,\text{meses}$ tras la entrega del proyecto. Esto incluye el alojamiento del registro de contenedores Docker y el soporte del servicio API de la librería \code{fatigueset-lib} ($15{,}00\,\text{\euro}/\text{mes}$), garantizando la disponibilidad del trabajo para la comunidad investigadora.
+
+La Tabla~\ref{tab:costes_despliegue} refleja estos costes operacionales.
+
+\begin{table}[htbp]
+\centering
+\caption{Desglose de costes de despliegue e infraestructura.}
+\label{tab:costes_despliegue}
+\small
+\begin{tabularx}{\linewidth}{@{}Xcrr@{}}
+\toprule
+\textbf{Infraestructura / Servicio} & \textbf{Cómputo / Tarifa} & \textbf{Duración} & \textbf{Coste Imputado (\euro)} \\
+\midrule
+Uso de Nodos GPU HPC (NVIDIA RTX 3090/A100) & 150 h de cálculo a $1{,}20\,\text{\euro}/\text{h}$ & 6 meses & 180,00 \\
+Servicio de hosting API y contenedor Docker & $15{,}00\,\text{\euro}/\text{mes}$ (soporte posterior) & 12 meses & 180,00 \\
+\midrule
+\textbf{Subtotal Despliegue y Mantenimiento} & -- & -- & \textbf{360,00} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Costes Indirectos y Suministros}
+Los costes indirectos representan aquellos gastos comunes compartidos entre el desarrollo del proyecto y otras actividades operativas, tales como el consumo eléctrico del puesto de trabajo, la climatización y la conectividad a Internet de alta velocidad ($600\,\text{Mbps}$).
+
+Se aplica un prorrateo mensual estimado de $40{,}00\,\text{\euro}/\text{mes}$ a lo largo de los 6 meses de ejecución activa, equivalente a un subtotal de $240{,}00\,\text{\euro}$. Este importe es totalmente coherente con la regla estándar del 10\,\% de gastos indirectos sobre la suma de costes operativos de ejecución.
+
+\subsection{Presupuesto Consolidado y Coste Total}
+La suma de las partidas analizadas constituye el presupuesto consolidado del proyecto, el cual se expone de forma sintética en la Tabla~\ref{tab:presupuesto_total}.
+
+\begin{table}[htbp]
+\centering
+\caption{Presupuesto consolidado y coste total del proyecto.}
+\label{tab:presupuesto_total}
+\begin{tabularx}{\linewidth}{@{}Xrr@{}}
+\toprule
+\textbf{Categoría de Coste} & \textbf{Importe (\euro)} & \textbf{Porcentaje (\%)} \\
+\midrule
+Costes de Personal (Desarrollo y Dirección) & 11.160,00 & 93,04 \% \\
+Costes de Material y Software & 235,00 & 1,96 \% \\
+Costes de Despliegue, Cómputo e Infraestructura & 360,00 & 3,00 \% \\
+Costes Indirectos y Suministros & 240,00 & 2,00 \% \\
+\midrule
+\textbf{Coste Total Real del Proyecto (Base Imponible)} & \textbf{11.995,00} & \textbf{100,00 \%} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+El coste total asciende a \textbf{11.995,00\,\euro}. En el caso de ejecutarse en el marco de un contrato de transferencia tecnológica o consultoría profesional externa, se aplicaría el impuesto sobre el valor añadido (IVA del 21~\%), alcanzando un presupuesto final para el cliente de \textbf{14.513,95\,\euro}.
+
+\subsection{Análisis de Desviaciones respecto al Presupuesto Inicial}
+Al inicio del proyecto se configuró un presupuesto estimado preliminar de \textbf{11.500,00\,\euro}, considerando una dedicación proyectada de 340 horas y una menor carga de computación en GPU.
+
+La diferencia entre el coste estimado y el coste real ejecutado es de \textbf{+495,00\,\euro}, lo que representa una ligera desviación del \textbf{+4,30\,\%}. Las causas principales de dicho ajuste se justifican a continuación:
+\begin{enumerate}
+    \item \textbf{Estabilización numérica de \slstm{} (+500,00\,\euro{} en Personal):} Se requirieron 20 horas adicionales de desarrollo e investigación matemática para solventar los problemas de desbordamiento exponencial en la celda \slstm{}, garantizando la estabilidad del seguimiento de máximos $m_t$ en precisión \code{float32}.
+    \item \textbf{Optimizaciones en GPU (+45,00\,\euro{} en Cómputo):} Se amplió en 37,5 horas el tiempo de ejecución en el clúster para abordar la evaluación zero-shot profunda de los modelos fundacionales \chronos{} y \timesfm{}.
+    \item \textbf{Ahorro en licencias software (-50,00\,\euro{}):} La sustitución de herramientas de análisis propietarias por librerías abiertas nativas en Python permitió mitigar parcialmente los costes anteriores.
+\end{enumerate}
+
+En conclusión, la desviación económica resulta inferior al 5\,\%, lo que confirma la rigurosidad y realismo de la planificación inicial, asegurando la viabilidad y sostenibilidad técnica del proyecto.
+

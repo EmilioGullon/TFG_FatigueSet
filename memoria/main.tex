@@ -1,0 +1,82 @@
+% ======================================================================
+% TRABAJO DE FIN DE GRADO - ETSIIT UNIVERSIDAD DE GRANADA
+% Título: Análisis predictivo de fatiga mediante datos biométricos multimodales
+% Autor: Emilio Gullón
+% Convocatoria: 2025/2026
+% ======================================================================
+
+\documentclass[11pt, a4paper, twoside, openright]{report}
+
+% Cargar configuración y paquetes
+\input{config/preamble}
+
+\begin{document}
+
+% ----------------------------------------------------------------------
+% PARTE PRELIMINAR (Frontmatter)
+% ----------------------------------------------------------------------
+\pagenumbering{roman}
+\input{chapters/00_frontmatter}
+
+% ----------------------------------------------------------------------
+% CUERPO PRINCIPAL DE LA MEMORIA (Mainmatter)
+% ----------------------------------------------------------------------
+\cleardoublepage
+\pagenumbering{arabic}
+
+% Capítulo 1: Introducción
+\input{chapters/01_introduccion}
+
+% Capítulo 2: Estado del Arte y Marco Teórico
+\input{chapters/02_estado_del_arte}
+
+% Capítulo 3: Dataset FatigueSet y Procesamiento de Señales Fisiológicas
+\input{chapters/03_dataset_y_preprocesamiento}
+
+% Capítulo 4: Diseño e Implementación del Framework fatigueset-lib
+\input{chapters/04_arquitectura_framework}
+
+% Capítulo 5: Metodología Experimental y Benchmarking
+\input{chapters/05_experimentacion_benchmarking}
+
+% Capítulo 6: Resultados Experimentales y Discusión Crítica
+\input{chapters/06_resultados_discusion}
+
+% Capítulo 7: Valorización Tecnológica, Aplicaciones Prácticas y Marco Regulatorio (EU AI Act)
+\input{chapters/07_valorizacion_casos_practicos}
+
+% Capítulo 8: Planificación Temporal y Gestión del Proyecto
+\input{chapters/07_planificacion_presupuesto}
+
+% Capítulo 9: Conclusiones, Impacto Ético/ODS y Trabajos Futuros
+\input{chapters/08_conclusiones_trabajos_futuros}
+
+% ----------------------------------------------------------------------
+% BIBLIOGRAFÍA
+% ----------------------------------------------------------------------
+\cleardoublepage
+\bibliographystyle{unsrt}
+\bibliography{bib/references}
+
+% ----------------------------------------------------------------------
+% APÉNDICES (Backmatter)
+% ----------------------------------------------------------------------
+\cleardoublepage
+\appendix
+
+% Apéndice A: Propiedad Intelectual y Licencias
+\input{appendices/apendice_a_licencias}
+
+% Apéndice B: Manual de Instalación y Uso de fatigueset-lib
+\input{appendices/apendice_b_manual_fatigueset_lib}
+
+% Apéndice C: Espacios de Búsqueda y Mejores Hiperparámetros de Optuna
+\input{appendices/apendice_c_hiperparametros_optuna}
+
+% Apéndice D: Configuración del Clúster GPU e Infraestructura SLURM
+\input{appendices/apendice_d_scripts_slurm_gpu}
+
+% Apéndice E: Glosario de Términos Fisiológicos y Machine Learning
+\input{appendices/apendice_e_glosario_acronimos}
+
+\end{document}

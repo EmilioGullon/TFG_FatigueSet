@@ -1,3 +1,15 @@
+# Trabajo de Fin de Grado (TFG) — Universidad de Granada
+
+- **Título Propuesto:** Análisis predictivo de fatiga mediante datos biométricos multimodales
+- **Estudiante:** Emilio Gullón López
+- **Tutor:** Diego Jesús García Gil
+- **Departamento:** [Lenguajes y Sistemas Informáticos (LSI)](http://lsi.ugr.es/)
+- **Centro:** Escuela Técnica Superior de Ingenierías Informática y de Telecomunicación (ETSIIT)
+
+> Para consultar la ficha técnica oficial de la propuesta aprobada en SWAD, véase [propuesta_oficial_tfg.md](file:///c:/Users/egull/OneDrive/Documentos/Proyectos/tfg/docs/propuesta_oficial_tfg.md).
+
+---
+
 This document provides a description of the data files and metadata provided in FatigueSet. For more information see the [FatigueSet website](https://www.esense.io/datasets/fatigueset) or the original publication:
 
 **FatigueSet: A Multi-modal Dataset for Modeling Mental Fatigue and Fatigability**

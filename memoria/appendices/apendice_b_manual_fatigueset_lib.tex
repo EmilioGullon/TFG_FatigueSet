@@ -1,0 +1,87 @@
+% ======================================================================
+% APÉNDICE B: MANUAL DE INSTALACIÓN Y USO DE FATIGUESET-LIB
+% ======================================================================
+
+\chapter{Manual de Instalación y Uso de \code{fatigueset-lib}}
+\label{ap:manual_libreria}
+
+\section{Requisitos del Sistema e Instalación}
+\label{sec:ap_instalacion}
+
+La librería \code{fatigueset-lib} es compatible con sistemas operativos Linux (Ubuntu 20.04+, CentOS/RHEL 8+) y Windows 10/11 x86\_64. Requiere una versión de Python $\ge 3.10$ y soporte opcional para aceleración hardware mediante NVIDIA CUDA ($\ge 11.8$).
+
+\subsection{Creación del Entorno Virtual e Instalación Local}
+Se recomienda aislar las dependencias en un entorno virtual dedicado:
+
+\begin{lstlisting}[style=bashstyle, caption={Instalación de \code{fatigueset-lib} en modo desarrollo editable.}]
+# 1. Clonar el repositorio
+git clone https://github.com/EmilioGullon/TFG_FatigueSet.git
+cd TFG_FatigueSet/fatigueset-lib
+
+# 2. Crear y activar entorno virtual
+python -m venv .venv
+source .venv/bin/activate  # En Windows: .venv\Scripts\activate
+
+# 3. Instalar dependencias y paquete en modo editable
+pip install --upgrade pip
+pip install -e .
+
+# 4. Verificar instalacion ejecutando los tests unitarios
+pytest tests/ -v
+\end{lstlisting}
+
+\section{Guía Rápida de la API en Python}
+\label{sec:ap_api_guia}
+
+A continuación se ilustran ejemplos mínimos ejecutables de las principales funcionalidades del framework:
+
+\subsection{Carga de Datos y Creación de DataLoader con GroupKFold}
+\begin{lstlisting}[language=Python, caption={Carga de particiones estratificadas por participante.}]
+from fatigueset.data import load_fatigueset_processed, get_group_kfold_loaders
+
+# Cargar tensores preprocesados y metadatos de sujetos
+X, y, groups = load_fatigueset_processed(data_dir="data/processed")
+
+# Generar 5 particiones GroupKFold
+for fold, (train_loader, val_loader) in enumerate(
+    get_group_kfold_loaders(X, y, groups, n_splits=5, batch_size=32)
+):
+    print(f"--- Fold {fold+1} ---")
+    print(f"Batches Train: {len(train_loader)} | Batches Val: {len(val_loader)}")
+    break
+\end{lstlisting}
+
+\subsection{Instanciación y Entrenamiento de Modelos con la Factoría PyTorch}
+\begin{lstlisting}[language=Python, caption={Entrenamiento de un modelo xLSTM con el motor desacoplado.}]
+import torch
+import torch.nn as nn
+from fatigueset.models import get_model
+from fatigueset.models.engine import train_model
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# Instanciar el modelo xLSTM estabilizado
+model = get_model(
+    model_name="xlstm",
+    input_size=23,
+    hidden_size=160,
+    num_layers=3,
+    dropout=0.1,
+    output_dim=2
+).to(device)
+
+criterion = nn.MSELoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=4e-3, weight_decay=1e-4)
+
+# Entrenar con early stopping
+history, best_model = train_model(
+    model=model,
+    train_loader=train_loader,
+    val_loader=val_loader,
+    loss_fn=criterion,
+    optimizer=optimizer,
+    epochs=50,
+    patience=10,
+    device=device
+)
+\end{lstlisting}

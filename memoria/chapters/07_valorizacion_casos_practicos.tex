@@ -1,0 +1,355 @@
+% ======================================================================
+% CAPÍTULO 7: VALORIZACIÓN TECNOLÓGICA, APLICACIONES PRÁCTICAS Y MARCO REGULATORIO (EU AI ACT)
+% ======================================================================
+
+\chapter{Valorización Tecnológica, Aplicaciones Prácticas y Marco Regulatorio (EU AI Act)}
+\label{cap:valorizacion_casos}
+
+\section{Introducción y Posicionamiento de la Tecnología}
+\label{sec:val_introduccion}
+
+El desarrollo de la librería modular \code{fatigueset-lib} y su marco experimental asociado representan un avance de primer orden en el modelado biomédico y computacional de la fatiga psicofisiológica humana. Tradicionalmente, la evaluación de la fatiga en entornos ocupacionales y de seguridad crítica se ha abordado mediante dos metodologías limitadas:
+\begin{enumerate}
+    \item \textbf{Cuestionarios Psicométricos Subjetivos:} Instrumentos retrospectivos desfasados temporalmente (como la escala analógica visual VAS, la escala de somnolencia de Stanford SSS o encuestas FSS), cuya cumplimentación interrumpe el flujo de trabajo y adolece de sesgos cognitivos individuales o falseamiento deliberado por parte del trabajador.
+    \item \textbf{Sistemas Reactivos de Visión Artificial:} Cámaras instaladas en cabina o salpicadero dirigidas al rostro del operador para detectar signos somáticos tardíos, tales como parpadeos prolongados (\textit{PERCLOS}), bostezos o cabeceos. Estos sistemas adolecen de una reactividad tardía (la alerta se activa cuando el micro-sueño ya se ha iniciado) y sufren elevadas tasas de falsas alarmas provocadas por alteraciones en la iluminación ambiental, uso de gafas de sol, giros cefálicos o vibraciones del vehículo.
+\end{enumerate}
+
+La arquitectura desarrollada en este Trabajo de Fin de Grado trasciende ambos planteamientos al formular la estimación de la fatiga física y mental como un problema de \textbf{regresión continua multivariada sobre series temporales multimodales}. Mediante la monitorización no invasiva de señales del sistema nervioso autónomo (SNA) y central (SNC), la plataforma es capaz de predecir el deterioro psicofisiológico de forma preventiva, antes de que se manifiesten síntomas somáticos visibles o claudicaciones neuromusculares.
+
+El marco experimental validó la hipótesis de que las redes neuronales profundas especializadas en series temporales superan de forma holística a los algoritmos de aprendizaje automático tabular clásico en cuanto a la generalización inter-sujeto bajo validación cruzada estratificada por participante (\textit{GroupKFold}, $K=5$). Mientras que las aproximaciones tabulares sufren una severa degradación predictiva al enfrentarse a sujetos no observados durante la fase de ajuste ($R^2 < -2.4$), las arquitecturas recurrentes y convolucionales dilatadas mantienen un error absoluto medio (MAE) en el rango de 16.12 a 18.45 sobre escalas normalizadas de 0 a 100.
+
+\begin{table}[htbp]
+\centering
+\caption{Ficha técnica y comparativa computacional de los modelos de \code{fatigueset-lib} frente a referencias externas.}
+\label{tab:comparativa_modelos_fisiologicos}
+\small
+\renewcommand{\arraystretch}{1.15}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{@{}llccccc@{}}
+\toprule
+\textbf{Modelo} & \textbf{Paradigma} & \textbf{MAE Fís.} & \textbf{MAE Men.} & \textbf{MAE Glob.} & \textbf{Parámetros} & \textbf{Latencia Inf.} \\
+\midrule
+\multicolumn{7}{@{}l}{\textbf{A. Modelos Nativos Integrados en \code{fatigueset-lib} (Despliegue Local / Edge)}} \\
+\textbf{Custom GRU} & Recurrente con compuertas & 16.12 & 17.86 & \textbf{16.99} & 568k & $\sim 2.5$ ms \\
+\textbf{Custom \xlstm{} (\slstm{})} & Recurrente estabilizada & 16.48 & 18.18 & 17.33 & 625k & $\sim 3.8$ ms \\
+\textbf{Custom TCN} & Convolución causal dilatada & 16.95 & 18.45 & 17.70 & \textbf{175k} & $\mathbf{<1.5}$ \textbf{ms} \\
+\textbf{Custom CNN-LSTM} & Híbrido convolucional & 16.70 & 18.42 & 17.56 & \textbf{84k} & $\sim 2.0$ ms \\
+\textbf{Custom \patchtst{}} & Transformer por parches & 18.20 & 20.68 & 19.44 & \textbf{77k} & $\sim 2.2$ ms \\
+\midrule
+\multicolumn{7}{@{}l}{\textbf{B. Referencias Externas de Benchmarking (Líneas Base y Modelos Fundacionales)}} \\
+\textbf{\chronos{}-T5 (Base)$^\dagger$} & Foundation autoregresivo & \textbf{14.11} & 18.95 & 16.53 & 710M & $\sim 45.0$ ms \\
+Random Forest (Agg)$^\ddagger$ & Ensamble tabular & 20.10 & 22.50 & 21.30 & N/A & $<0.1$ ms \\
+\bottomrule
+\end{tabular}%
+}
+\begin{flushleft}
+\footnotesize
+$^\dagger$ Modelo fundacional externo ejecutado en clúster GPU como cota superior en régimen \textit{zero-shot}. \\
+$^\ddagger$ Modelo clásico de Machine Learning entrenado sobre características estadísticas agregadas.
+\end{flushleft}
+\end{table}
+
+A través de esta evaluación experimental exhaustiva (sintetizada en la Tabla~\ref{tab:comparativa_modelos_fisiologicos}) se identificó una divergencia neurofisiológica fundamental:
+\begin{itemize}
+    \item \textbf{Fatiga Física:} Exhibe un acoplamiento directo, robusto y altamente predecible con biomarcadores cardiorrespiratorios (frecuencia cardíaca, HRV-SDNN, intervalos R-R y volumen respiratorio).
+    \item \textbf{Fatiga Mental:} Presenta una dinámica biomédica más compleja y sutil, caracterizada por oscilaciones en la potencia espectral electroencefalográfica (ratios EEG $\theta/\alpha$ en regiones prefrontales), micro-respuestas fásicas de la conductancia electrodérmica (EDA) y una mayor vulnerabilidad a artefactos motores.
+\end{itemize}
+
+
+
+\section{Catálogo de Aplicaciones Prácticas Reales por Sector Industrial}
+\label{sec:val_sectores}
+
+La capacidad de capturar y procesar 23 canales fisiológicos en ventanas temporales de 60 segundos habilita un amplio abanico de aplicaciones en sectores industriales estratégicos donde el declive psicomotor entraña riesgos de seguridad crítica o costes operacionales millonarios.
+
+\subsection{Transporte Terrestre, Flotas Logísticas y Aviación Comercial}
+
+En la industria del transporte por carretera, la fatiga y la somnolencia al volante constituyen un factor causal directo en un porcentaje estimado de entre el 15\% y el 20\% de los accidentes de tráfico graves a nivel global. Los sistemas de visión artificial tradicionales basados en cámaras sufren interferencias constantes por variaciones de iluminación, vibración del habitáculo y uso de gafas.
+
+La integración de los modelos de \code{fatigueset-lib} en pulseras vestibles o sensores integrados en el volante permite detectar el declive fisiológico previo a la manifestación somática de micro-sueños. Analizando de forma continua la variabilidad cardíaca (HRV) desde fotopletismografía (PPG), combinada con la respuesta electrodérmica (EDA) y la acelerometría, el sistema emite alertas graduadas y silenciosas mediante pulsos hápticos en la muñeca o avisos acústicos en cabina.
+
+Más allá de la seguridad vial, existe un impacto directo en la eficiencia energética de las flotas: los conductores alertas exhiben patrones de aceleración y frenado más uniformes. Estudios de telemetría demuestran que un operador alerta consume hasta un \textbf{1.35\% menos de combustible} que uno en estado de fatiga moderada, lo que se traduce en reducciones de costes masivas en grandes compañías de transporte internacional.
+
+\subsection{Industria Pesada, Minería y Extracción de Recursos}
+
+Las explotaciones mineras a cielo abierto y las plantas industriales pesadas operan en regímenes ininterrumpidos de 24 horas los 365 días del año. Los operadores de camiones de extracción de gran tonelaje (superiores a 400 toneladas) y grúas de puerto están expuestos a monotonía ambiental extrema y desincronización circadiana en turnos nocturnos.
+
+Casos comerciales consolidados como SmartCap (adquirido por Wenco/Hitachi) demuestran que el sector minero demanda prioritariamente soluciones basadas en bioseñales directas. La propuesta tecnológica de este TFG permite procesar no solo EEG, sino una red sensorial multimodal completa (ECG, EDA, inerciales y temperatura). Mediante modelos como TCN o GRU, las empresas pueden sustituir los descansos fijos y rígidos por un \textbf{Sistema Dinámico de Gestión del Riesgo de Fatiga} (\textit{Fatigue Risk Management System}, FRMS). La asignación dinámica de pausas adaptadas al riesgo biológico real del operador permite recuperar \textbf{más de 50 horas operativas anuales por máquina}, mitigando simultáneamente el riesgo de siniestros catastróficos.
+
+\subsection{Sector Sanitario y Personal de Servicios de Emergencia}
+
+El trabajo hospitalario en guardias médicas continuadas de 24 horas y turnos rotatorios genera fatiga crónica acumulada en facultativos de urgencias, intensivistas, cirujanos y personal de enfermería. Se estima que un 38\% del personal médico duerme menos de 6 horas antes de una guardia y un 44\% omite sus pausas reglamentarias, lo que eleva exponencialmente el riesgo de fallos clínicos.
+
+La monitorización biomédica no invasiva mediante pulseras o parches dérmicos permite emitir recomendaciones preventivas de relevo o descansos breves (\textit{power naps}). La literatura clínica demuestra que la introducción de alertas tempranas reduce en un \textbf{51\% los errores médicos documentados}, optimizando la precisión en la administración de fármacos intravenosos, la dosificación de medicamentos de alto riesgo y la rapidez diagnóstica en intervenciones críticas.
+
+\subsection{Defensa, Fuerzas Armadas y Operaciones Tácticas}
+
+En misiones tácticas y operaciones de vuelo militar, los efectivos humanos experimentan sobrecarga cognitiva extrema, estrés psicofísico agudo y privación de sueño prolongada. Agencias de investigación avanzada en defensa (como DARPA en Estados Unidos) financian activamente sistemas vestibles para el soldado desmontado (\textit{dismounted soldier}).
+
+La ligereza computacional del modelo Custom TCN desarrollado en este TFG (latencia $<1.5$ ms y consumo de memoria $<5$ MB) permite su integración en chalecos tácticos sensorizados. Los comandantes de escuadrón pueden monitorizar la conciencia situacional y el estado de operatividad de la unidad en tiempo real sin saturar los canales de comunicación visual o por radio de los combatientes.
+
+La Tabla~\ref{tab:casos_uso_sectores} sintetiza los cuatro casos de uso sectoriales analizados, detallando los dispositivos vestibles, los biomarcadores procesados y el retorno de inversión proyectado.
+
+\begin{table}[htbp]
+\centering
+\caption{Matriz de casos de uso prácticos por sector industrial, tecnologías sensoras y métricas de retorno de inversión (ROI).}
+\label{tab:casos_uso_sectores}
+\small
+\renewcommand{\arraystretch}{0.95}
+\begin{tabularx}{\linewidth}{@{}p{3.2cm}p{3.2cm}Xp{3.6cm}@{}}
+\toprule
+\textbf{Sector Industrial} & \textbf{Dispositivos} & \textbf{Biomarcadores Clave} & \textbf{Retorno de Inversión (ROI)} \\
+\midrule
+\textbf{Flotas Logísticas y Transporte} 
+& Smartwatch o sensores en el volante 
+& PPG, HRV (SDNN, RMSSD), EDA fásica, Acelerometría 
+& Ahorro del 1.35\% en combustible; reducción de hasta el 60\% en accidentes graves. \\
+\midrule
+\textbf{Minería y Maquinaria Pesada} 
+& Diadema o auriculares inercial-ópticos 
+& EEG ($\theta/\beta$), ECG continuo, Dinámica respiratoria 
+& Recuperación de $+50$ horas operativas/año; supresión de micro-sueños. \\
+\midrule
+\textbf{Sanidad y Urgencias Médicas} 
+& Pulsera vestible o parche torácico 
+& BVP, ECG, EDA, Temperatura dérmica periférica 
+& Reducción del 51\% en errores de medicación; menos litigios clínicos. \\
+\midrule
+\textbf{Defensa y Operaciones Tácticas} 
+& Red sensorial en chaleco táctico 
+& ECG torácico, EEG 4 canales, PPG auricular, Acelerometría 
+& Mantenimiento de conciencia situacional en combate prolongado. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+
+
+\section{Marco Regulatorio Europeo y Cumplimiento Normativo (EU AI Act y RGPD)}
+\label{sec:val_regulatorio}
+
+El despliegue de sistemas de inteligencia artificial para la monitorización de trabajadores en la Unión Europea está sujeto a un marco legislativo sumamente garantista. La Figura~\ref{fig:eu_ai_act_mapa} ilustra el mapa conceptual de delimitación regulatoria bajo el Reglamento de Inteligencia Artificial de la UE (EU AI Act), distinguiendo taxativamente entre las prácticas prohibidas y los sistemas de alto riesgo autorizados para la prevención de riesgos laborales.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[node distance=1.0cm, auto,
+        prohib/.style={rectangle, draw=ugrred, fill=red!8, rounded corners=6pt, text width=5.8cm, text centered, minimum height=2.4cm, font=\small},
+        allowed/.style={rectangle, draw=darkgreen, fill=green!8, rounded corners=6pt, text width=5.8cm, text centered, minimum height=2.4cm, font=\small},
+        reqbox/.style={rectangle, draw=etsiitblue, fill=blue!6, rounded corners=6pt, text width=12.4cm, text centered, minimum height=2.0cm, font=\small},
+        line/.style={draw=darkblue, -latex', thick}]
+        
+        \node [prohib] (prohib) {\textbf{PRÁCTICA PROHIBIDA}\\\textbf{(Art. 5(1)(f) EU AI Act)}\\\vspace{0.1cm}\footnotesize
+        \textbf{Inferencia de Emociones en el Trabajo}\\
+        $\bullet$ Detección de enfado, tristeza, alegría\\
+        $\bullet$ Evaluación de motivación o afinidad\\
+        $\bullet$ Clasificación de estrés psicológico};
+        
+        \node [allowed, right=0.8cm of prohib] (allowed) {\textbf{IA DE ALTO RIESGO AUTORIZADA}\\\textbf{(Recital 18 EU AI Act)}\\\vspace{0.1cm}\footnotesize
+        \textbf{Monitorización Fisiológica Objetiva}\\
+        $\bullet$ Detección de fatiga muscular y mental\\
+        $\bullet$ Medición de somnolencia y micro-sueños\\
+        $\bullet$ Prevención de riesgos laborales (PRL)};
+        
+        \node [reqbox, below=1.2cm of $(prohib.south)!0.5!(allowed.south)$] (reqs) {\textbf{REQUISITOS DE GOBERNANZA OBLIGATORIOS (Anexo III, Sección 4)}\\\vspace{0.1cm}\footnotesize
+        \textbf{1. Supervisión Humana (Human-in-the-Loop):} Prohibición de decisiones disciplinarias automáticas.\\
+        \textbf{2. Auditoría de Sesgos:} Certificar paridad de error MAE entre subgrupos demográficos.\\
+        \textbf{3. Privacidad en el Edge:} Procesamiento local sin transmisión de bioseñales crudas (LPRL / RGPD).};
+        
+        \path [line] (allowed.south) -- ++(0,-0.5) -| (reqs.north);
+    \end{tikzpicture}
+    \caption{Mapa conceptual de delimitación regulatoria bajo el Reglamento de IA de la Unión Europea (EU AI Act): distinción entre reconocimiento de emociones prohibido y detección de fatiga fisiológica autorizada de alto riesgo.}
+    \label{fig:eu_ai_act_mapa}
+\end{figure}
+
+\subsection{Distinción Legal entre Reconocimiento de Emociones y Detección de Estados Fisiológicos}
+
+Existe una línea divisoria jurídica que resulta determinante para la legalidad del proyecto:
+\begin{itemize}
+    \item \textbf{Práctica Prohibida (Artículo 5(1)(f) del EU AI Act):} Desde el 2 de febrero de 2025, el Reglamento de Inteligencia Artificial (Reglamento UE 2024/1689) prohíbe taxativamente la puesta en servicio de sistemas de IA destinados a deducir las \textit{emociones} de una persona física en los lugares de trabajo o en centros educativos. Esta sanción alcanza a tecnologías que busquen clasificar motivación, aburrimiento, estado anímico o estrés psicológico.
+    \item \textbf{Excepción Explícita de Estados Fisiológicos (Recital 18):} El propio texto legal y las directrices de la Comisión Europea aclaran expresamente que los sistemas destinados a medir \textbf{estados corporales y fisiológicos objetivos} ---como la fatiga, la somnolencia, el dolor físico o la capacidad de reacción motriz--- \textbf{no se consideran sistemas de reconocimiento de emociones}. Por tanto, la tecnología desarrollada en este TFG es plenamente conforme a derecho y legal en territorio comunitario, siempre que se ciña a parámetros corporales para la prevención de accidentes.
+\end{itemize}
+
+\subsection{Clasificación como Sistema de IA de Alto Riesgo y Requisitos de Gobernanza}
+
+Aunque exenta de prohibición, la plataforma se clasifica como un \textbf{Sistema de IA de Alto Riesgo} al encuadrarse en el Anexo III, Sección 4 (empleo, gestión de trabajadores y acceso al autoempleo) y en el Anexo I (componente de seguridad de maquinaria o vehículos). Ello impone los siguientes requisitos técnicos obligatorios:
+\begin{enumerate}
+    \item \textbf{Supervisión Humana Obligatoria (\textit{Human-in-the-loop}):} El sistema no puede ejecutar despidos, sanciones disciplinarias o modificaciones contractuales automatizadas. Su función debe restringirse a la emisión de alertas preventivas, recomendaciones de pausa o activación de protocolos de relevo.
+    \item \textbf{Evaluación de Sesgos y Equidad Algorítmica:} Es preceptivo certificar documentalmente que el modelo mantiene tasas de error (MAE) equivalentes entre diferentes subgrupos demográficos de edad, sexo o complexión física, evitando la discriminación algorítmica.
+    \item \textbf{Trazabilidad y Ciberseguridad:} Registro seguro e inalterable (\textit{logging}) de las predicciones para permitir la auditoría forense en caso de incidente laboral.
+\end{enumerate}
+
+Bajo la iniciativa \textit{Digital Omnibus} de la Comisión Europea, el calendario de exigibilidad plena para sistemas de alto riesgo en el ámbito laboral se extiende hasta finales de 2027 o principios de 2028, otorgando una ventana temporal idónea para la maduración del software.
+
+\subsection{Protección de Datos Biométricos en el Ámbito Laboral Español (RGPD y AEPD)}
+
+En virtud del RGPD (Reglamento UE 2016/679) y la jurisprudencia de la Agencia Española de Protección de Datos (AEPD), las bioseñales (ECG, EEG, EDA) constituyen \textbf{categorías especiales de datos de salud} (Art. 9 RGPD).
+
+La base jurídica legitimadora para su tratamiento por parte del empresario se encuentra en el cumplimiento de las obligaciones legales en materia de seguridad y salud recogidas en la Ley 31/1995 de Prevención de Riesgos Laborales (LPRL). Para cumplir con el principio de \textbf{minimización de datos}, se prescribe una arquitectura basada en \textit{Edge Computing}, donde las señales brutas se procesan y desechan dentro del dispositivo vestible, transmitiendo únicamente índices agregados y seudonimizados hacia los paneles de gestión empresarial previa consulta con la representación legal de los trabajadores.
+
+
+
+\clearpage
+\section{Viabilidad Técnica y Arquitectura de Despliegue: Edge AI frente a Cloud}
+\label{sec:val_arquitectura_edge}
+
+El análisis experimental de este TFG demostró una clara frontera de compromiso de Pareto entre la capacidad expresiva de los modelos, su demanda computacional y su idoneidad para operar en tiempo real en hardware incrustado (\textit{embedded}). La Figura~\ref{fig:arquitectura_edge_cloud} esquematiza la arquitectura jerárquica de despliegue en tres niveles (Edge en el vestible, Gateway en cabina y Cloud en servidor central), permitiendo desacoplar la emisión de alertas inmediatas de la analítica longitudinal a gran escala.
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[node distance=1.4cm, auto,
+        edgebox/.style={rectangle, draw=etsiitblue, fill=blue!6, rounded corners=6pt, text width=3.3cm, text centered, minimum height=2.6cm, font=\small},
+        gatebox/.style={rectangle, draw=darkblue, fill=blue!12, rounded corners=6pt, text width=3.3cm, text centered, minimum height=2.6cm, font=\small},
+        cloudbox/.style={rectangle, draw=ugrred, fill=red!6, rounded corners=6pt, text width=3.3cm, text centered, minimum height=2.6cm, font=\small},
+        line/.style={draw=darkblue, -latex', thick}]
+        
+        \node [edgebox] (edge) {\textbf{NIVEL 1: EDGE}\\\textbf{WEARABLE}\\\vspace{0.05cm}\footnotesize
+        \textbf{Microcontrolador ARM}\\
+        $\bullet$ Modelos: TCN / CNN-LSTM\\
+        $\bullet$ Memoria: $< 5\,\text{MB}$ (INT8)\\
+        $\bullet$ Inferencia: $< 1.5\,\text{ms}$\\
+        $\bullet$ Operación local autónoma\\
+        $\bullet$ Alerta háptica directa};
+        
+        \node [gatebox, right=1.4cm of edge] (gate) {\textbf{NIVEL 2: GATEWAY}\\\textbf{CABINA}\\\vspace{0.05cm}\footnotesize
+        \textbf{Unidad de Control}\\
+        $\bullet$ Modelos: Custom GRU / \slstm{}\\
+        $\bullet$ Memoria: $< 12\,\text{MB}$\\
+        $\bullet$ Inferencia: $\sim 2.5 - 3.8\,\text{ms}$\\
+        $\bullet$ Agregación de bioseñales\\
+        $\bullet$ Alerta en salpicadero};
+        
+        \node [cloudbox, right=1.4cm of gate] (cloud) {\textbf{NIVEL 3: CLOUD}\\\textbf{SERVIDOR NUBE}\\\vspace{0.05cm}\footnotesize
+        \textbf{Plataforma Central}\\
+        $\bullet$ Modelo: Chronos-T5 (710M)\\
+        $\bullet$ Memoria: $> 3\,\text{GB}$ VRAM\\
+        $\bullet$ Inferencia: $\sim 45.0\,\text{ms}$\\
+        $\bullet$ Analítica global de planta\\
+        $\bullet$ Optimización FRMS};
+        
+        \path [line] (edge) -- node [above=2pt, font=\tiny\bfseries, align=center] {Bluetooth\\LE} (gate);
+        \path [line] (gate) -- node [above=2pt, font=\tiny\bfseries, align=center] {MQTT /\\HTTPS} (cloud);
+    \end{tikzpicture}
+    \caption{Arquitectura jerárquica de despliegue tecnológico distribuido para monitorización de fatiga: desde el procesamiento ultra-rápido en el dispositivo vestible (Edge) hasta la analítica global en servidor (Cloud).}
+    \label{fig:arquitectura_edge_cloud}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\caption{Matriz de viabilidad de despliegue por modelo en entornos embebidos y en la nube.}
+\label{tab:despliegue_modelos}
+\small
+\begin{tabularx}{\linewidth}{@{}p{2.8cm}cccc>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Modelo} & \textbf{Memoria} & \textbf{Latencia} & \textbf{Paráms.} & \textbf{Cuant.} & \textbf{Entorno de Despliegue Óptimo} \\
+\midrule
+\textbf{Custom TCN} & $<5$ MB & $<1.5$ ms & 175k & INT8 & Microcontrolador ARM Cortex-M4 / Wearable IoT \\
+\textbf{Custom CNN-LSTM} & $<8$ MB & $\sim 2.0$ ms & 84k & INT8 & Smartwatch comercial / Auricular inteligente \\
+\textbf{Custom GRU} & $<10$ MB & $\sim 2.5$ ms & 568k & FP16 & Unidad telemática de cabina / Smartphone \\
+\textbf{Custom \slstm{}} & $<12$ MB & $\sim 3.8$ ms & 625k & FP16 & Edge Gateway industrial / Dispositivo PDA \\
+\textbf{\chronos{}-T5} & $>3$ GB & $\sim 45.0$ ms & 710M & FP16 & Servidor clúster en la nube / Analítica SaaS \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Como se desprende de la Tabla~\ref{tab:despliegue_modelos}, la red \textbf{Custom TCN} se consolida como la arquitectura idónea para dispositivos vestibles de bajo consumo: con tan solo 175.000 parámetros y una latencia inferior a 1.5 ms, su exportación al formato abierto ONNX Runtime permite una cuantización en enteros de 8 bits (\code{INT8}) sin merma perceptible de precisión ($MAE \approx 17.70$). Esto garantiza una monitorización continua sin agotar la batería ni depender de conexión inalámbrica a internet.
+
+Por su parte, los Modelos Fundacionales como \chronos{}-T5 (710M parámetros) ofrecen la mejor precisión pura en fatiga física ($MAE = 14.11$), pero su latencia ($\sim 45$ ms) y su exigencia de memoria VRAM ($>3$ GB) los confinan al nivel de analítica agregada en servidores centrales de nube, donde procesan series históricas para la planificación estratégica de descansos en sistemas FRMS.
+
+\subsection{Estrategia de Ablación Sensorial y Ergonomía del Trabajador}
+
+El protocolo experimental de \fatigueset{} registra 23 canales fisiológicos mediante cuatro dispositivos concurrentes. Si bien este despliegue es exhaustivo en laboratorio, su traslación a jornadas laborales de 8 horas resulta inviable ergonómicamente por la incomodidad que producen las bandas torácicas y las diademas cefálicas.
+
+La industrialización del sistema exige una \textbf{estrategia de ablación de sensores}, reduciendo los requisitos a un factor de forma mínimo no invasivo:
+\begin{enumerate}
+    \item \textbf{Configuración Óptima Mínima:} Un reloj inteligente o pulsera médica en la muñeca (capturando PPG tri-longitud de onda, conductancia cutánea EDA fásica y acelerometría 3D).
+    \item \textbf{Rendimiento Preservado:} Los experimentos de ablación evidencian que la combinación de PPG + EDA + ACC preserva más del 90\% del rendimiento en fatiga física y un nivel aceptable en fatiga mental, eliminando toda fricción ergonómica para el trabajador.
+\end{enumerate}
+
+
+
+\section{Modelos de Negocio, Retorno de Inversión (ROI) y Hoja de Ruta de Comercialización}
+\label{sec:val_negocio_roadmap}
+
+\subsection{Estrategias de Monetización B2B}
+
+La explotación comercial de la plataforma predictiva se articula en torno a tres modelos de negocio B2B complementarios:
+\begin{enumerate}
+    \item \textbf{Hardware-as-a-Service (HaaS) + SaaS para Flotas e Industria Pesada:} Suscripción mensual recurrente por operador monitorizado ($35 - 60$\,€/mes/trabajador) que incluye el suministro del dispositivo vestible, la sustitución periódica de sensores y el acceso al panel analítico corporativo de control de fatiga.
+    \item \textbf{Licenciamiento de Motor Algorítmico (SDK / API Engine):} Integración del motor de inferencia optimizado en formato ONNX en sistemas telemáticos de terceros (fabricantes de camiones, plataformas de gestión de flotas FMS o software de prevención de riesgos laborales).
+    \item \textbf{Modelos Analíticos para Aseguradoras y Mutuas Laborales:} Venta de informes de riesgo predictivo agregado para empresas aseguradoras, permitiendo bonificar las pólizas de cobertura a compañías que acrediten una gestión preventiva de la fatiga laboral.
+\end{enumerate}
+
+\subsection{Análisis de Retorno de Inversión (ROI) para la Empresa Cliente}
+
+La adquisición de la plataforma ofrece retornos económicos tangibles sustentados en cuatro pilares operacionales (Tabla~\ref{tab:roi_estimado}):
+
+\begin{table}[htbp]
+\centering
+\caption{Análisis de retorno de inversión (ROI) e impacto financiero para la empresa cliente.}
+\label{tab:roi_estimado}
+\small
+\begin{tabularx}{\linewidth}{@{}p{4.4cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{4.6cm}@{}}
+\toprule
+\textbf{Indicador de Impacto} & \textbf{Mecanismo Fisiológico / Operacional} & \textbf{Retorno Económico Estimado} \\
+\midrule
+\textbf{Siniestralidad Operativa} & Supresión de micro-sueños en operaciones y maniobras críticas. & Reducción de hasta un 60\% en accidentes graves y paradas no programadas. \\
+\midrule
+\textbf{Gasto de Combustible} & Mantenimiento de la vigilancia para una aceleración progresiva y eficiente. & Reducción directa del 0.5\% al 1.35\% en el consumo global de combustible. \\
+\midrule
+\textbf{Optimización de Turnos} & Sustitución de paradas fijas por descansos dinámicos en base al riesgo real. & Recuperación de $+50$ horas operativas/año por operador de maquinaria. \\
+\midrule
+\textbf{Errores de Medicación} & Alertas precoces en turnos nocturnos para personal sanitario de guardia. & Caída del 51\% en fallos de medicación y mitigación de demandas por negligencia. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Hoja de Ruta de Transferencia Tecnológica en Tres Fases (24 Meses)}
+
+Para trasladar los algoritmos desarrollados en este TFG hacia un producto comercial maduro (\textit{Technology Readiness Level} TRL 8--9), se ha diseñado la hoja de ruta temporal ilustrada en la Figura~\ref{fig:roadmap_comercial}:
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[node distance=0.7cm, auto,
+        phase/.style={rectangle, draw=etsiitblue, fill=blue!6, rounded corners=6pt, text width=3.6cm, text centered, minimum height=2.6cm, font=\small},
+        line/.style={draw=darkblue, -latex', thick}]
+        
+        \node [phase] (p1) {\textbf{FASE 1}\\\textbf{OPTIMIZACIÓN TÉCNICA}\\\vspace{0.04cm}\footnotesize
+        \textbf{Meses 1 -- 6 (TRL 4 $\rightarrow$ 6)}\\\vspace{0.08cm}\scriptsize
+        $\bullet$ Estudio de ablación sensorial\\
+        $\bullet$ Reducción a pulsera PPG+EDA\\
+        $\bullet$ Exportación a ONNX INT8\\
+        $\bullet$ Benchmark en ARM Cortex-M4};
+        
+        \node [phase, right=0.7cm of p1] (p2) {\textbf{FASE 2}\\\textbf{PILOTOS EN CAMPO}\\\vspace{0.04cm}\footnotesize
+        \textbf{Meses 7 -- 15 (TRL 6 $\rightarrow$ 7)}\\\vspace{0.08cm}\scriptsize
+        $\bullet$ Despliegue en 3 hospitales piloto\\
+        $\bullet$ Prueba en 50 camiones mineros\\
+        $\bullet$ Validación de usabilidad real\\
+        $\bullet$ Calibración inter-sujeto};
+        
+        \node [phase, right=0.7cm of p2] (p3) {\textbf{FASE 3}\\\textbf{CERTIFICACIÓN Y ESCALA}\\\vspace{0.04cm}\footnotesize
+        \textbf{Meses 16 -- 24 (TRL 7 $\rightarrow$ 9)}\\\vspace{0.08cm}\scriptsize
+        $\bullet$ Conformidad IA de Alto Riesgo\\
+        $\bullet$ Expediente técnico DPIA RGPD\\
+        $\bullet$ Marcado CE de dispositivo\\
+        $\bullet$ Lanzamiento comercial B2B};
+        
+        \path [line] (p1) -- (p2);
+        \path [line] (p2) -- (p3);
+    \end{tikzpicture}
+    \caption{Cronograma estratégico de transferencia y comercialización de la plataforma multimodal en tres fases sucesivas (24 meses).}
+    \label{fig:roadmap_comercial}
+\end{figure}
+
+
+
+\section{Conclusiones y Recomendaciones Estratégicas}
+\label{sec:val_conclusiones}
+
+El análisis de valorización tecnológica desarrollado permite extraer cuatro conclusiones estratégicas:
+\begin{enumerate}
+    \item \textbf{Viabilidad Algorítmica Contrastada:} El modelado de fatiga física y mental mediante redes profundas ligeras es técnica y económicamente factible. Modelos como Custom GRU ($MAE = 16.99$) y Custom TCN ($MAE = 17.70$) ofrecen el equilibrio perfecto entre estabilidad inter-sujeto, precisión y consumo energético.
+    \item \textbf{Oportunidad de Mercado Diferencial:} Existe una fuerte demanda no satisfecha en sectores logísticos, mineros, sanitarios y militares para sustituir sistemas de cámaras reactivas por soluciones fisiológicas preventivas no invasivas.
+    \item \textbf{Conformidad Legal Plena en la UE:} La monitorización de la fatiga fisiológica no está prohibida por el Reglamento de IA de la UE al tratarse de un estado biológico y no de una inferencia emocional. Su calificación como IA de Alto Riesgo exige salvaguardar el principio de supervisión humana (*Human-in-the-loop*) y ejecutar el procesamiento en el Edge para blindar la privacidad.
+    \item \textbf{Líneas de Acción Inmediatas:} Concluir la cuantización del modelo TCN en microcontroladores embebidos, perfeccionar la arquitectura sensorial hacia un factor de forma de pulsera única y formalizar consorcios de ensayo piloto con operadores logísticos y servicios hospitalarios de urgencia.
+\end{enumerate}

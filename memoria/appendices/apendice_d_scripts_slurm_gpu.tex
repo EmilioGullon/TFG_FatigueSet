@@ -1,0 +1,64 @@
+% ======================================================================
+% APÉNDICE D: CONFIGURACIÓN DEL CLÚSTER GPU Y SCRIPTS SLURM
+% ======================================================================
+
+\chapter{Configuración del Clúster GPU e Infraestructura SLURM}
+\label{ap:slurm_scripts}
+
+\section{Arquitectura del Entorno de Supercomputación UGR}
+\label{sec:ap_cluster_arch}
+
+Los experimentos de entrenamiento a gran escala se ejecutaron en la infraestructura de computación científica de la Universidad de Granada:
+\begin{itemize}
+    \item \textbf{Servidor de Acceso SSH:} \code{ngpu.ugr.es}
+    \item \textbf{Nodos de Cómputo:} \code{titan} equipados con aceleradoras NVIDIA GPU (11.90 GiB VRAM utilizable).
+    \item \textbf{Gestor de Recursos:} SLURM (\textit{Simple Linux Utility for Resource Management}).
+    \item \textbf{Partición Asignada:} \code{dios} con límite máximo de 12 horas de cómputo por tarea.
+    \item \textbf{Entorno de Ejecución:} Conda aislado en \code{/mnt/homeGPU/egullonl01/conda\_tfg}.
+\end{itemize}
+
+\section{Script de Envío para Modelos Fundacionales (\moment{} y \chronos{})}
+\label{sec:ap_slurm_foundation}
+
+El Listado~\ref{lst:slurm_foundation} reproduce el script \code{run\_foundation\_server.sh} empleado para coordinar la ejecución secuencial aislada en el clúster:
+
+\begin{lstlisting}[style=bashstyle, caption={Script de ejecución por lotes en SLURM para MOMENT y Chronos.}, label={lst:slurm_foundation}]
+#!/bin/bash
+#SBATCH --job-name=Foundation_TFG
+#SBATCH --partition=dios
+#SBATCH --gres=gpu:1
+#SBATCH --mem=32G
+#SBATCH --time=12:00:00
+#SBATCH --output=/mnt/homeGPU/egullonl01/tfg/Jupyters/slurm-%j.out
+#SBATCH --error=/mnt/homeGPU/egullonl01/tfg/Jupyters/slurm-%j.out
+
+# Cargar paths de Anaconda
+export PATH="/opt/anaconda/anaconda3/bin:$PATH"
+export PATH="/opt/anaconda/bin:$PATH"
+
+# Redirigir caches a almacenamiento persistente para evitar cuota en HOME
+export IPYTHONDIR="/mnt/homeGPU/egullonl01/.ipython"
+export JUPYTER_CONFIG_DIR="/mnt/homeGPU/egullonl01/.jupyter"
+export JUPYTER_DATA_DIR="/mnt/homeGPU/egullonl01/.local/share/jupyter"
+export JUPYTER_RUNTIME_DIR="/mnt/homeGPU/egullonl01/.local/share/jupyter/runtime"
+export HF_HOME="/mnt/homeGPU/egullonl01/.cache/huggingface"
+export XDG_CACHE_HOME="/mnt/homeGPU/egullonl01/.cache"
+
+eval "$(conda shell.bash hook)"
+conda activate /mnt/homeGPU/egullonl01/conda_tfg
+cd /mnt/homeGPU/egullonl01/tfg/Jupyters
+
+# 1. Ejecutar MOMENT fine-tuning en proceso independiente
+echo "--- Ejecutando MOMENT-1-large ---"
+jupyter nbconvert --to notebook --execute \
+    --ExecutePreprocessor.kernel_name=python3 \
+    --inplace 09_foundation_models_moment.ipynb
+
+# 2. Ejecutar Chronos-T5 zero-shot en proceso limpio
+echo "--- Ejecutando Chronos-T5-base ---"
+jupyter nbconvert --to notebook --execute \
+    --ExecutePreprocessor.kernel_name=python3 \
+    --inplace 09_foundation_models_chronos.ipynb
+
+echo "--- Benchmarks completados con exito ---"
+\end{lstlisting}
