@@ -10,7 +10,7 @@ __pycache__/
 /scripts_visualizacion/fatigueset_aggregated_features_clean.csv
 /Jupyters/1.Preprocesado/fatigueset_aggregated_features.csv
 
-# Artefactos de LaTeX
+# Artefactos de LaTeX y documento
 *.aux
 *.bbl
 *.blg
@@ -19,6 +19,8 @@ __pycache__/
 *.lot
 *.out
 *.toc
+memoria/
+
 
 # Archivos temporales comunes
 *.swp
