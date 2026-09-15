@@ -53,14 +53,5 @@ TFGs/TFG_JesusReyesdeToro.pdf
 TFGs/TFG_RSA.pdf
 TFGs/TFG-memoria_SantiagoGarvinPerez.pdf
 
-# Presentación Beamer — solo se versiona el .tex fuente
-presentacion/presentacion.pdf
-presentacion/*.aux
-presentacion/*.log
-presentacion/*.nav
-presentacion/*.out
-presentacion/*.snm
-presentacion/*.toc
-presentacion/*.vrb
-presentacion/test.log
-presentacion/test.tex
+# Presentación
+presentacion/
